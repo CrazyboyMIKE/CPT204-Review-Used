@@ -991,9 +991,248 @@ Exam sentence:
 
 ## 9. Generics-Related Keyword Usage / 泛型中相关关键字用法
 
-CPT204 的泛型题中，`extends` 和 `super` 会以 wildcard bound 的形式出现。
+CPT204 的泛型题中，最容易考的是：泛型类、泛型方法、`Comparable<T>`、`Comparator<T>`、通配符 `? extends T` / `? super T`、raw type、diamond operator，以及增强 `for` 背后的 `Iterable` / `Iterator`。
 
-### `? extends T`
+Important note / 重要说明：
+
+泛型语法里的 `<T>`、`<?>`、`<E>`、`<>` **不是 Java keyword**，但它们是 CPT204 里非常重要的 Java syntax。相关真正的关键字主要是：
+
+```text
+class interface extends implements for new return
+```
+
+English:
+
+> Generic type parameters such as `<T>` and wildcards such as `?` are not keywords, but they are important Java syntax used with classes, interfaces, and methods.
+
+### 9.1 Generic Class / 泛型类
+
+中文解释：泛型类是在类名后写类型参数，让同一个类可以保存不同类型的数据，同时保持类型安全。
+
+English explanation: A generic class uses type parameters so that the same class can work with different types while preserving type safety.
+
+Example:
+
+```java
+class Box<T> {
+    private T value;
+
+    public Box(T value) {
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+}
+
+Box<String> box = new Box<>("CPT204");
+String text = box.getValue();
+```
+
+Concrete effect / 具体作用：
+
+- 编译器知道 `Box<String>` 里面放的是 `String`。
+- 取出数据时不需要强制类型转换。
+- 如果放入错误类型，编译期就会报错。
+
+Exam sentence:
+
+> A generic class provides compile-time type safety by using type parameters.
+
+Trap / 坑点：
+
+```java
+Box<String> box = new Box<>("Java");
+// Box<int> wrong = new Box<>(10); // Compile-time error
+Box<Integer> correct = new Box<>(10);
+```
+
+泛型类型参数必须是引用类型 reference type，不能是 primitive type。要用 `Integer`，不能用 `int`。
+
+### 9.2 Generic Method / 泛型方法
+
+中文解释：泛型方法是在返回类型前声明类型参数，例如 `<E>`。它可以独立于类的泛型参数。
+
+English explanation: A generic method declares its own type parameter before the return type.
+
+Example:
+
+```java
+public static <E> void printArray(E[] values) {
+    for (E value : values) {
+        System.out.println(value);
+    }
+}
+```
+
+Concrete effect / 具体作用：
+
+- 同一个方法可以处理 `String[]`、`Integer[]`、`Double[]` 等不同数组。
+- 编译器根据调用时传入的参数推断 `E`。
+
+Exam sentence:
+
+> A generic method declares type parameters before the return type and can be used with different argument types.
+
+Trap / 坑点：
+
+```java
+public static <E> E first(E[] values) {
+    return values[0];
+}
+```
+
+`<E>` 必须写在返回类型 `E` 前面。如果只写 `public static E first(...)`，编译器不知道 `E` 是什么。
+
+### 9.3 Bounded Type Parameter: `<E extends Comparable<E>>`
+
+中文解释：`extends` 在泛型中可以表示上界 upper bound，意思是 E 必须是某种可以比较的类型。
+
+English explanation: In generics, `extends` can define an upper bound, meaning the type must be a subtype of the bound.
+
+Example:
+
+```java
+public static <E extends Comparable<E>> E max(E first, E second) {
+    if (first.compareTo(second) >= 0) {
+        return first;
+    }
+    return second;
+}
+```
+
+Concrete effect / 具体作用：
+
+- 编译器允许在 `E` 上调用 `compareTo`。
+- 没有 `extends Comparable<E>`，`first.compareTo(second)` 会编译失败。
+
+Exam sentence:
+
+> `<E extends Comparable<E>>` means that E must implement Comparable, so objects of type E can be compared.
+
+Trap / 坑点：
+
+这里的 `extends` 不一定表示“继承一个类”，也可以表示“实现接口上界”。`Comparable<E>` 是接口，但泛型边界仍然写 `extends`，不是 `implements`。
+
+English trap sentence:
+
+> In a generic bound, Java uses `extends` for both class bounds and interface bounds.
+
+### 9.4 `Comparable<T>` vs `Comparator<T>`
+
+中文解释：`Comparable<T>` 让对象自己知道怎么比较；`Comparator<T>` 把比较规则放在另一个对象里。
+
+English explanation: `Comparable<T>` defines the natural ordering inside a class, while `Comparator<T>` defines an external ordering rule.
+
+Comparable example:
+
+```java
+class Student implements Comparable<Student> {
+    private int mark;
+
+    public int compareTo(Student other) {
+        return Integer.compare(mark, other.mark);
+    }
+}
+```
+
+Comparator example:
+
+```java
+Comparator<Student> byName = new Comparator<Student>() {
+    public int compare(Student a, Student b) {
+        return a.getName().compareTo(b.getName());
+    }
+};
+```
+
+Concrete effect / 具体作用：
+
+- `Comparable`：一个类的默认排序方式 natural ordering。
+- `Comparator`：可以为同一个类写多个排序规则。
+
+Exam sentence:
+
+> `Comparable` defines a class's natural ordering, while `Comparator` defines an external comparison strategy.
+
+Trap / 坑点：
+
+`compareTo` 和 `compare` 的返回值含义：
+
+```text
+negative number: first object is smaller
+zero: equal in ordering
+positive number: first object is greater
+```
+
+不要误以为必须返回 `-1`、`0`、`1`，只要负数、零、正数即可。
+
+### 9.5 Raw Type Trap / 原始类型陷阱
+
+中文解释：raw type 是不写泛型参数的集合类型，例如 `ArrayList list`。它会绕过泛型类型检查，容易产生运行时错误。
+
+English explanation: A raw type is a generic type used without type arguments, which disables generic type checking.
+
+Bad example:
+
+```java
+ArrayList list = new ArrayList();
+list.add("Java");
+list.add(100);
+
+String text = (String) list.get(1); // Runtime ClassCastException
+```
+
+Better example:
+
+```java
+ArrayList<String> list = new ArrayList<>();
+list.add("Java");
+// list.add(100); // Compile-time error
+```
+
+Exam sentence:
+
+> Raw types should be avoided because they remove compile-time type safety.
+
+Trap / 坑点：
+
+泛型的价值是把错误提前到 compile time。raw type 会把错误推迟到 runtime。
+
+### 9.6 Diamond Operator `<>` / 菱形操作符
+
+中文解释：`<>` 叫 diamond operator。它不是关键字，而是让编译器根据左边类型推断右边对象的泛型类型。
+
+English explanation: The diamond operator `<>` allows the compiler to infer generic type arguments.
+
+Example:
+
+```java
+ArrayList<String> names = new ArrayList<>();
+HashMap<Integer, String> map = new HashMap<>();
+```
+
+Concrete effect / 具体作用：
+
+- 减少重复代码。
+- 右边不用再写 `new ArrayList<String>()`。
+- 编译器仍然知道集合元素类型。
+
+Exam sentence:
+
+> The diamond operator lets the compiler infer the generic type arguments from the context.
+
+Trap / 坑点：
+
+`<>` 不是“任意类型都可以放进去”。类型已经由左边决定：
+
+```java
+ArrayList<String> names = new ArrayList<>();
+// names.add(123); // Compile-time error
+```
+
+### 9.7 `? extends T`
 
 中文解释：表示某种 T 或 T 子类型。适合读数据。
 
@@ -1016,7 +1255,7 @@ Exam sentence:
 
 > `? extends T` is mainly used when the structure produces values to be read as T.
 
-### `? super T`
+### 9.8 `? super T`
 
 中文解释：表示某种 T 或 T 父类型。适合写入 T。
 
@@ -1042,9 +1281,284 @@ Memory phrase:
 PECS = Producer Extends, Consumer Super
 ```
 
-## 10. Exam Trap Bank / CPT204 高频坑点库
+### 9.9 Generic Invariance / 泛型不变性
 
-### 10.1 `static` is not constant
+中文解释：即使 `Integer` 是 `Number` 的子类，`ArrayList<Integer>` 也不是 `ArrayList<Number>` 的子类。
+
+English explanation: Java generics are invariant. `List<Integer>` is not a subtype of `List<Number>`, even though `Integer` is a subtype of `Number`.
+
+Trap example:
+
+```java
+ArrayList<Integer> integers = new ArrayList<>();
+// ArrayList<Number> numbers = integers; // Compile-time error
+```
+
+Why / 为什么：
+
+如果允许这样赋值，就可能发生：
+
+```java
+// numbers.add(3.14);
+```
+
+这样 `integers` 里就会混入 `Double`，破坏 `ArrayList<Integer>` 的类型安全。
+
+Exam sentence:
+
+> Java generics are invariant, so `ArrayList<Integer>` is not a subtype of `ArrayList<Number>`.
+
+### 9.10 Type Erasure / 类型擦除
+
+中文解释：Java 泛型主要在编译期提供类型检查，编译后很多泛型信息会被擦除。
+
+English explanation: Java generics are mostly implemented by type erasure, meaning much generic type information is removed at compile time.
+
+Concrete effect / 具体作用：
+
+- 泛型主要提供 compile-time type safety。
+- 运行时通常不知道 `ArrayList<String>` 和 `ArrayList<Integer>` 的具体泛型参数。
+- 不能直接 `new T()`。
+
+Trap examples:
+
+```java
+class Factory<T> {
+    T create() {
+        // return new T(); // Compile-time error
+        return null;
+    }
+}
+```
+
+```java
+ArrayList<String> strings = new ArrayList<>();
+ArrayList<Integer> integers = new ArrayList<>();
+
+System.out.println(strings.getClass() == integers.getClass()); // true
+```
+
+Exam sentence:
+
+> Due to type erasure, generic type parameters are mainly checked at compile time and are not fully available at runtime.
+
+## 10. Iterator And Iterable / 迭代器与 Iterable
+
+重要说明：`Iterator`、`Iterable`、`hasNext()`、`next()`、`remove()` **都不是 Java keywords**。它们是接口或方法名。但 CPT204 的集合、增强 `for`、遍历题中经常出现，所以必须会。
+
+Important note:
+
+> `Iterator` and `Iterable` are not Java keywords. They are interfaces used by the Java Collections Framework.
+
+### 10.1 Enhanced `for` and `Iterable`
+
+中文解释：增强 `for` 可以遍历数组，也可以遍历实现了 `Iterable` 的对象。
+
+English explanation: The enhanced `for` loop can iterate over arrays and objects that implement `Iterable`.
+
+Example:
+
+```java
+ArrayList<String> names = new ArrayList<>();
+names.add("Alice");
+names.add("Bob");
+
+for (String name : names) {
+    System.out.println(name);
+}
+```
+
+Concrete effect / 具体作用：
+
+- 语法更简洁。
+- 不需要手动管理 index。
+- 对集合来说，底层通常使用 iterator。
+
+Exam sentence:
+
+> The enhanced `for` loop works with arrays and objects that implement `Iterable`.
+
+Trap / 坑点：
+
+增强 `for` 适合读取遍历，不适合一边遍历一边删除集合元素。
+
+```java
+for (String name : names) {
+    // names.remove(name); // May cause ConcurrentModificationException
+}
+```
+
+### 10.2 Manual Iterator / 手动使用 Iterator
+
+中文解释：`Iterator<E>` 是一个遍历集合的对象。常用方法是 `hasNext()` 和 `next()`。
+
+English explanation: `Iterator<E>` is an object used to traverse a collection. Its common methods are `hasNext()` and `next()`.
+
+Example:
+
+```java
+Iterator<String> iterator = names.iterator();
+
+while (iterator.hasNext()) {
+    String name = iterator.next();
+    System.out.println(name);
+}
+```
+
+Concrete effect / 具体作用：
+
+- `hasNext()` 判断是否还有元素。
+- `next()` 返回下一个元素并移动迭代位置。
+- 手动 iterator 可以在遍历时安全删除当前元素。
+
+Exam sentence:
+
+> An iterator provides a standard way to traverse a collection without exposing its internal structure.
+
+Trap / 坑点：
+
+不要在没有检查 `hasNext()` 时盲目调用 `next()`：
+
+```java
+Iterator<String> iterator = names.iterator();
+// String value = iterator.next(); // If empty, NoSuchElementException
+```
+
+### 10.3 Safe Removal With Iterator / 用 Iterator 安全删除
+
+中文解释：遍历集合时，如果需要删除当前元素，应该使用 iterator 的 `remove()`，而不是集合自己的 `remove()`。
+
+English explanation: When removing elements during iteration, use the iterator's `remove()` method instead of the collection's `remove()` method.
+
+Example:
+
+```java
+Iterator<String> iterator = names.iterator();
+
+while (iterator.hasNext()) {
+    String name = iterator.next();
+    if (name.startsWith("A")) {
+        iterator.remove();
+    }
+}
+```
+
+Concrete effect / 具体作用：
+
+- `iterator.remove()` 删除的是最近一次 `next()` 返回的元素。
+- 可以避免很多 fail-fast 集合中的 `ConcurrentModificationException`。
+
+Exam sentence:
+
+> To remove elements safely while iterating, use `Iterator.remove()` after calling `next()`.
+
+Trap / 坑点：
+
+```java
+Iterator<String> iterator = names.iterator();
+// iterator.remove(); // IllegalStateException, because next() has not been called
+```
+
+必须先调用 `next()`，再调用 `remove()`。
+
+### 10.4 Implementing Iterable / 自定义类实现 Iterable
+
+中文解释：如果一个自定义类实现 `Iterable<E>`，它就可以被增强 `for` 遍历。
+
+English explanation: If a custom class implements `Iterable<E>`, it can be used in an enhanced `for` loop.
+
+Example:
+
+```java
+class NameBag implements Iterable<String> {
+    private ArrayList<String> names = new ArrayList<>();
+
+    public void add(String name) {
+        names.add(name);
+    }
+
+    public Iterator<String> iterator() {
+        return names.iterator();
+    }
+}
+
+NameBag bag = new NameBag();
+bag.add("Alice");
+bag.add("Bob");
+
+for (String name : bag) {
+    System.out.println(name);
+}
+```
+
+Concrete effect / 具体作用：
+
+- `implements Iterable<String>` 表示这个类承诺提供 `iterator()`。
+- 增强 `for` 会调用 `iterator()` 来遍历元素。
+
+Exam sentence:
+
+> A class that implements `Iterable` must provide an `iterator()` method, allowing it to be used in an enhanced `for` loop.
+
+Trap / 坑点：
+
+`Iterator` 和 `Iterable` 不一样：
+
+```text
+Iterable: something that can be iterated over
+Iterator: the object that performs the iteration
+```
+
+中文：
+
+```text
+Iterable：可被遍历的对象
+Iterator：真正执行遍历的迭代器对象
+```
+
+### 10.5 Iterator vs Index Loop / 迭代器 vs 下标循环
+
+中文解释：数组和 `ArrayList` 适合下标循环；`LinkedList` 用下标访问可能很慢，更适合 iterator 或 enhanced for。
+
+English explanation: Arrays and `ArrayList` are efficient for index-based loops, while `LinkedList` is usually better traversed with an iterator or enhanced `for`.
+
+Example:
+
+```java
+for (int i = 0; i < list.size(); i++) {
+    System.out.println(list.get(i));
+}
+```
+
+对于 `ArrayList` 通常没问题；但对 `LinkedList`，`get(i)` 每次可能都要从头走，整体可能变成 `O(n^2)`。
+
+Exam sentence:
+
+> Index-based access is efficient for arrays and `ArrayList`, but iterator-based traversal is often better for `LinkedList`.
+
+### 10.6 Iterator Exam Traps / 迭代器考试坑点
+
+1. `Iterator` is not a keyword.  
+   `Iterator` 不是关键字，是接口。
+
+2. Enhanced `for` uses `Iterable` for collections.  
+   集合能被增强 `for` 遍历，是因为它实现了 `Iterable`。
+
+3. Calling `next()` without an available element may throw `NoSuchElementException`.  
+   没有下一个元素还调用 `next()` 会出错。
+
+4. Calling `remove()` before `next()` may throw `IllegalStateException`.  
+   没有先 `next()` 就 `remove()` 会出错。
+
+5. Removing directly from the collection while using enhanced `for` may cause `ConcurrentModificationException`.  
+   增强 `for` 中直接用集合 remove 可能导致并发修改异常。
+
+6. `Iterable` produces an `Iterator`; `Iterator` performs the traversal.  
+   `Iterable` 产生迭代器；`Iterator` 真正遍历。
+
+## 11. Exam Trap Bank / CPT204 高频坑点库
+
+### 11.1 `static` is not constant
 
 `static` 表示属于类，不代表不能修改。常量通常写成：
 
@@ -1056,7 +1570,7 @@ English:
 
 > `static` does not mean constant; constants are usually declared with `static final`.
 
-### 10.2 `final` reference is not deep immutable
+### 11.2 `final` reference is not deep immutable
 
 ```java
 final ArrayList<String> list = new ArrayList<>();
@@ -1067,7 +1581,7 @@ English:
 
 > `final` prevents reassignment of the reference, not mutation of the object.
 
-### 10.3 `private` is not directly visible to subclasses
+### 11.3 `private` is not directly visible to subclasses
 
 ```java
 class A {
@@ -1085,7 +1599,7 @@ English:
 
 > Private members are not directly accessible in subclasses.
 
-### 10.4 `throw` vs `throws`
+### 11.4 `throw` vs `throws`
 
 ```java
 throw new IllegalArgumentException();
@@ -1103,7 +1617,7 @@ English:
 
 > `throw` performs the throwing action, while `throws` declares possible exceptions.
 
-### 10.5 `break` vs `continue`
+### 11.5 `break` vs `continue`
 
 ```java
 for (int i = 1; i <= 3; i++) {
@@ -1122,7 +1636,7 @@ Output:
 
 `continue` 只跳过当前一轮，不结束整个循环。
 
-### 10.6 `switch` fall-through
+### 11.6 `switch` fall-through
 
 没有 `break` 会继续往下执行。
 
@@ -1130,7 +1644,7 @@ English:
 
 > Missing `break` in a traditional switch statement may cause fall-through.
 
-### 10.7 integer division
+### 11.7 integer division
 
 ```java
 double result = 5 / 2;
@@ -1145,7 +1659,7 @@ System.out.println(result); // 2.0
 double result = 5 / 2.0;
 ```
 
-### 10.8 `char` plus int
+### 11.8 `char` plus int
 
 ```java
 char c = 'A';
@@ -1154,7 +1668,7 @@ System.out.println(c + 1); // 66
 
 `char` 算术运算时提升为 int。
 
-### 10.9 `String` is not a keyword
+### 11.9 `String` is not a keyword
 
 `String` 很常用，但它不是 Java keyword，它是 `java.lang.String` 类。
 
@@ -1162,7 +1676,7 @@ English:
 
 > `String` is a class, not a Java keyword.
 
-### 10.10 Collection names are not keywords
+### 11.10 Collection names are not keywords
 
 `ArrayList`、`HashMap`、`Queue`、`Stack`、`PriorityQueue` 都不是关键字，它们是类或接口。
 
@@ -1170,7 +1684,7 @@ English:
 
 > Collection names such as `ArrayList` and `HashMap` are classes or interfaces, not keywords.
 
-## 11. Exam Answer Templates / 英文考试答题模板
+## 12. Exam Answer Templates / 英文考试答题模板
 
 ### Access modifier
 
@@ -1208,7 +1722,7 @@ English:
 
 > `throw` actually throws an exception object, while `throws` declares that a method may throw exceptions.
 
-## 12. Final Priority List / 最后优先背诵清单
+## 13. Final Priority List / 最后优先背诵清单
 
 ### Must know / 必须会
 
@@ -1236,6 +1750,21 @@ assert
 ```text
 String Object ArrayList HashMap HashSet Queue Stack PriorityQueue
 Comparable Comparator Collection List Set Map
+Iterable Iterator
 ```
 
 这些不是关键字，但 CPT204 里非常常见。
+
+### Generic syntax to remember / 泛型语法记忆
+
+```text
+<T>
+<E>
+<>
+?
+? extends T
+? super T
+<E extends Comparable<E>>
+```
+
+这些也不是关键字，但 CPT204 的泛型、排序、集合题里很容易考。
