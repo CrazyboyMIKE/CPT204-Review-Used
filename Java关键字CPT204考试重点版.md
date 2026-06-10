@@ -1556,9 +1556,619 @@ Exam sentence:
 6. `Iterable` produces an `Iterator`; `Iterator` performs the traversal.  
    `Iterable` 产生迭代器；`Iterator` 真正遍历。
 
-## 11. Exam Trap Bank / CPT204 高频坑点库
+## 11. Complete Java Example Bank / 完整 Java 示例库
 
-### 11.1 `static` is not constant
+这一节把前面零散讲到的关键字组合成完整 Java 文件形式。每个代码块都可以复制到对应文件名中运行。这样你能看到关键字在真实 Java 程序里的位置，而不是只看到孤立片段。
+
+This section rewrites the important examples as complete Java files. Each code block can be copied into a `.java` file with the same public class name.
+
+### 11.1 Access Modifier Complete Example
+
+File name:
+
+```text
+AccessModifierExample.java
+```
+
+```java
+public class AccessModifierExample {
+    public static void main(String[] args) {
+        Student student = new Student("Alice", 88);
+        System.out.println(student.getName());
+        System.out.println(student.getMark());
+
+        GraduateStudent graduate = new GraduateStudent("Bob", 92, "Graphs");
+        graduate.printResearchTopic();
+    }
+}
+
+class Student {
+    private String name;
+    protected int mark;
+
+    public Student(String name, int mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getMark() {
+        return mark;
+    }
+}
+
+class GraduateStudent extends Student {
+    private String researchTopic;
+
+    public GraduateStudent(String name, int mark, String researchTopic) {
+        super(name, mark);
+        this.researchTopic = researchTopic;
+    }
+
+    public void printResearchTopic() {
+        System.out.println("Mark: " + mark);
+        System.out.println("Topic: " + researchTopic);
+        // System.out.println(name); // Compile-time error: name is private in Student.
+    }
+}
+```
+
+这个例子同时展示：
+
+- `public`：`main` 和 getter 可以从外部访问。
+- `private`：`name` 只能在 `Student` 内部直接访问。
+- `protected`：`mark` 可以在子类 `GraduateStudent` 中直接访问。
+- `extends` / `super`：子类调用父类构造器。
+
+English exam sentence:
+
+> `private` hides data inside the class, while `protected` allows subclass access and same-package access.
+
+### 11.2 OOP Keywords Complete Example
+
+File name:
+
+```text
+OopKeywordExample.java
+```
+
+```java
+public class OopKeywordExample {
+    public static void main(String[] args) {
+        Shape circle = new Circle("blue", 3.0);
+        System.out.println(circle.describe());
+        System.out.println(circle.area());
+
+        if (circle instanceof Circle) {
+            Circle realCircle = (Circle) circle;
+            System.out.println(realCircle.getRadius());
+        }
+
+        System.out.println(MathTool.square(5));
+    }
+}
+
+interface Printable {
+    String describe();
+}
+
+abstract class Shape implements Printable {
+    private String color;
+
+    public Shape(String color) {
+        this.color = color;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public abstract double area();
+
+    public final String category() {
+        return "shape";
+    }
+}
+
+class Circle extends Shape {
+    private double radius;
+
+    public Circle(String color, double radius) {
+        super(color);
+        this.radius = radius;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    @Override
+    public double area() {
+        return Math.PI * radius * radius;
+    }
+
+    @Override
+    public String describe() {
+        return "Circle color: " + getColor();
+    }
+}
+
+final class MathTool {
+    private MathTool() {
+    }
+
+    public static int square(int value) {
+        return value * value;
+    }
+}
+```
+
+这个例子同时展示：
+
+- `interface`：`Printable` 定义能力。
+- `abstract`：`Shape` 不能直接 `new`，但能保存共同状态。
+- `implements`：`Shape` 实现接口。
+- `extends`：`Circle` 继承 `Shape`。
+- `super`：调用父类构造器。
+- `this`：区分当前对象字段和参数。
+- `final`：`category()` 不能被重写，`MathTool` 不能被继承。
+- `static`：`MathTool.square(5)` 不需要创建对象。
+- `instanceof`：向下转型前判断真实类型。
+
+English exam sentence:
+
+> `extends` creates an inheritance relationship, while `implements` connects a class to an interface contract.
+
+### 11.3 Primitive Types And Control Flow Complete Example
+
+File name:
+
+```text
+PrimitiveControlFlowExample.java
+```
+
+```java
+public class PrimitiveControlFlowExample {
+    public static void main(String[] args) {
+        int score = 86;
+        char grade = calculateGrade(score);
+        boolean passed = score >= 40;
+
+        System.out.println("Grade: " + grade);
+        System.out.println("Passed: " + passed);
+        printCountdown(3);
+        printMenuResult(2);
+        printLoopTrap();
+    }
+
+    public static char calculateGrade(int score) {
+        if (score >= 70) {
+            return 'A';
+        } else if (score >= 60) {
+            return 'B';
+        } else if (score >= 50) {
+            return 'C';
+        }
+        return 'F';
+    }
+
+    public static void printCountdown(int start) {
+        while (start > 0) {
+            System.out.println(start);
+            start--;
+        }
+    }
+
+    public static void printMenuResult(int choice) {
+        switch (choice) {
+            case 1:
+                System.out.println("Add");
+                break;
+            case 2:
+                System.out.println("View");
+                break;
+            default:
+                System.out.println("Unknown");
+                break;
+        }
+    }
+
+    public static void printLoopTrap() {
+        for (int i = 1; i <= 5; i++) {
+            if (i == 3) {
+                continue;
+            }
+            if (i == 5) {
+                break;
+            }
+            System.out.print(i + " ");
+        }
+        System.out.println();
+
+        double result = 5 / 2;
+        double fixed = 5 / 2.0;
+        System.out.println(result);
+        System.out.println(fixed);
+    }
+}
+```
+
+这个例子同时展示：
+
+- `int`、`char`、`boolean`、`double`、`void`
+- `if` / `else`
+- `switch` / `case` / `default` / `break`
+- `for` / `while`
+- `continue` / `return`
+- 整数除法 `5 / 2` 的坑
+
+English exam sentence:
+
+> `break` terminates the loop or switch, while `continue` skips only the current loop iteration.
+
+### 11.4 Exception Handling Complete Example
+
+File name:
+
+```text
+ExceptionKeywordExample.java
+```
+
+```java
+public class ExceptionKeywordExample {
+    public static void main(String[] args) {
+        try {
+            setAge(-1);
+        } catch (IllegalArgumentException ex) {
+            System.out.println("Caught: " + ex.getMessage());
+        } finally {
+            System.out.println("Cleanup finished");
+        }
+
+        int size = 3;
+        assert size >= 0 : "Size must not be negative";
+    }
+
+    public static void setAge(int age) throws IllegalArgumentException {
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+        System.out.println("Age: " + age);
+    }
+}
+```
+
+运行断言需要：
+
+```bash
+java -ea ExceptionKeywordExample
+```
+
+这个例子同时展示：
+
+- `try`：包住可能出错的代码。
+- `catch`：捕获异常。
+- `finally`：通常执行清理。
+- `throw`：真正抛出异常对象。
+- `throws`：在方法签名中声明可能抛出异常。
+- `assert`：调试时检查内部假设，默认关闭。
+
+English exam sentence:
+
+> `throw` actually throws an exception object, while `throws` declares that a method may throw exceptions.
+
+### 11.5 Enum And Import Complete Example
+
+File name:
+
+```text
+EnumCollectionExample.java
+```
+
+```java
+import java.util.ArrayList;
+
+public class EnumCollectionExample {
+    public static void main(String[] args) {
+        ArrayList<Task> tasks = new ArrayList<>();
+        tasks.add(new Task("Revise keywords", Priority.HIGH));
+        tasks.add(new Task("Read notes", Priority.MEDIUM));
+
+        for (Task task : tasks) {
+            printTask(task);
+        }
+    }
+
+    public static void printTask(Task task) {
+        switch (task.getPriority()) {
+            case HIGH:
+                System.out.println("Urgent: " + task.getTitle());
+                break;
+            case MEDIUM:
+                System.out.println("Normal: " + task.getTitle());
+                break;
+            case LOW:
+                System.out.println("Later: " + task.getTitle());
+                break;
+            default:
+                System.out.println("Unknown priority");
+                break;
+        }
+    }
+}
+
+enum Priority {
+    HIGH, MEDIUM, LOW
+}
+
+class Task {
+    private String title;
+    private Priority priority;
+
+    public Task(String title, Priority priority) {
+        this.title = title;
+        this.priority = priority;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+}
+```
+
+这个例子同时展示：
+
+- `import`：导入 `ArrayList`。
+- `enum`：定义固定优先级。
+- enhanced `for`：遍历集合。
+- `switch` enum 时，`case HIGH` 不写 `Priority.HIGH`。
+
+English exam sentence:
+
+> An enum defines a fixed set of constants and is safer than using strings for fixed categories.
+
+### 11.6 Generics Complete Example
+
+File name:
+
+```text
+GenericsExample.java
+```
+
+```java
+import java.util.ArrayList;
+import java.util.Comparator;
+
+public class GenericsExample {
+    public static void main(String[] args) {
+        Box<String> textBox = new Box<>("Java");
+        System.out.println(textBox.getValue());
+
+        Integer[] values = {3, 8, 2};
+        printArray(values);
+        System.out.println(max(10, 20));
+
+        ArrayList<Student> students = new ArrayList<>();
+        students.add(new Student("Alice", 88));
+        students.add(new Student("Bob", 75));
+
+        students.sort(Comparator.naturalOrder());
+        System.out.println(students);
+
+        students.sort(new StudentNameComparator());
+        System.out.println(students);
+
+        ArrayList<Integer> integers = new ArrayList<>();
+        integers.add(10);
+        integers.add(20);
+        System.out.println(sum(integers));
+
+        ArrayList<Number> numbers = new ArrayList<>();
+        addIntegers(numbers);
+        System.out.println(numbers);
+    }
+
+    public static <E> void printArray(E[] values) {
+        for (E value : values) {
+            System.out.println(value);
+        }
+    }
+
+    public static <E extends Comparable<E>> E max(E first, E second) {
+        if (first.compareTo(second) >= 0) {
+            return first;
+        }
+        return second;
+    }
+
+    public static double sum(ArrayList<? extends Number> values) {
+        double total = 0;
+        for (Number value : values) {
+            total += value.doubleValue();
+        }
+        return total;
+    }
+
+    public static void addIntegers(ArrayList<? super Integer> values) {
+        values.add(1);
+        values.add(2);
+    }
+}
+
+class Box<T> {
+    private T value;
+
+    public Box(T value) {
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+}
+
+class Student implements Comparable<Student> {
+    private String name;
+    private int mark;
+
+    public Student(String name, int mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public int compareTo(Student other) {
+        return Integer.compare(mark, other.mark);
+    }
+
+    @Override
+    public String toString() {
+        return name + ":" + mark;
+    }
+}
+
+class StudentNameComparator implements Comparator<Student> {
+    @Override
+    public int compare(Student first, Student second) {
+        return first.getName().compareTo(second.getName());
+    }
+}
+```
+
+这个例子同时展示：
+
+- 泛型类 `Box<T>`
+- 泛型方法 `<E>`
+- 上界 `<E extends Comparable<E>>`
+- `Comparable<Student>`
+- `Comparator<Student>`
+- `? extends Number`
+- `? super Integer`
+- diamond operator `new ArrayList<>()`
+
+English exam sentence:
+
+> Generics provide compile-time type safety and reduce the need for explicit casts.
+
+### 11.7 Iterator And Iterable Complete Example
+
+File name:
+
+```text
+IteratorIterableExample.java
+```
+
+```java
+import java.util.ArrayList;
+import java.util.Iterator;
+
+public class IteratorIterableExample {
+    public static void main(String[] args) {
+        NameBag bag = new NameBag();
+        bag.add("Alice");
+        bag.add("Bob");
+        bag.add("Amy");
+
+        for (String name : bag) {
+            System.out.println(name);
+        }
+
+        Iterator<String> iterator = bag.iterator();
+        while (iterator.hasNext()) {
+            String name = iterator.next();
+            if (name.startsWith("A")) {
+                iterator.remove();
+            }
+        }
+
+        System.out.println("After removal:");
+        for (String name : bag) {
+            System.out.println(name);
+        }
+    }
+}
+
+class NameBag implements Iterable<String> {
+    private ArrayList<String> names = new ArrayList<>();
+
+    public void add(String name) {
+        names.add(name);
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        return names.iterator();
+    }
+}
+```
+
+这个例子同时展示：
+
+- `Iterable<String>`：对象可以被 enhanced `for` 遍历。
+- `Iterator<String>`：真正执行遍历。
+- `hasNext()`：判断是否还有元素。
+- `next()`：取出下一个元素。
+- `iterator.remove()`：安全删除最近一次 `next()` 返回的元素。
+
+English exam sentence:
+
+> `Iterable` represents something that can be iterated over, while `Iterator` is the object that performs the traversal.
+
+### 11.8 Null And Reference Complete Example
+
+File name:
+
+```text
+NullReferenceExample.java
+```
+
+```java
+public class NullReferenceExample {
+    public static void main(String[] args) {
+        String text = null;
+
+        System.out.println(text instanceof String);
+
+        if (text != null) {
+            System.out.println(text.length());
+        } else {
+            System.out.println("Text is null");
+        }
+
+        String[] names = new String[2];
+        System.out.println(names[0]);
+
+        int[] values = new int[2];
+        System.out.println(values[0]);
+    }
+}
+```
+
+这个例子同时展示：
+
+- `null instanceof String` 是 `false`。
+- 引用类型数组默认元素是 `null`。
+- `int[]` 默认元素是 `0`。
+- 使用对象前先判断 `null` 可以避免 `NullPointerException`。
+
+English exam sentence:
+
+> `null` means that a reference variable does not refer to any object.
+
+## 12. Exam Trap Bank / CPT204 高频坑点库
+
+### 12.1 `static` is not constant
 
 `static` 表示属于类，不代表不能修改。常量通常写成：
 
@@ -1570,7 +2180,7 @@ English:
 
 > `static` does not mean constant; constants are usually declared with `static final`.
 
-### 11.2 `final` reference is not deep immutable
+### 12.2 `final` reference is not deep immutable
 
 ```java
 final ArrayList<String> list = new ArrayList<>();
@@ -1581,7 +2191,7 @@ English:
 
 > `final` prevents reassignment of the reference, not mutation of the object.
 
-### 11.3 `private` is not directly visible to subclasses
+### 12.3 `private` is not directly visible to subclasses
 
 ```java
 class A {
@@ -1599,7 +2209,7 @@ English:
 
 > Private members are not directly accessible in subclasses.
 
-### 11.4 `throw` vs `throws`
+### 12.4 `throw` vs `throws`
 
 ```java
 throw new IllegalArgumentException();
@@ -1617,7 +2227,7 @@ English:
 
 > `throw` performs the throwing action, while `throws` declares possible exceptions.
 
-### 11.5 `break` vs `continue`
+### 12.5 `break` vs `continue`
 
 ```java
 for (int i = 1; i <= 3; i++) {
@@ -1636,7 +2246,7 @@ Output:
 
 `continue` 只跳过当前一轮，不结束整个循环。
 
-### 11.6 `switch` fall-through
+### 12.6 `switch` fall-through
 
 没有 `break` 会继续往下执行。
 
@@ -1644,7 +2254,7 @@ English:
 
 > Missing `break` in a traditional switch statement may cause fall-through.
 
-### 11.7 integer division
+### 12.7 integer division
 
 ```java
 double result = 5 / 2;
@@ -1659,7 +2269,7 @@ System.out.println(result); // 2.0
 double result = 5 / 2.0;
 ```
 
-### 11.8 `char` plus int
+### 12.8 `char` plus int
 
 ```java
 char c = 'A';
@@ -1668,7 +2278,7 @@ System.out.println(c + 1); // 66
 
 `char` 算术运算时提升为 int。
 
-### 11.9 `String` is not a keyword
+### 12.9 `String` is not a keyword
 
 `String` 很常用，但它不是 Java keyword，它是 `java.lang.String` 类。
 
@@ -1676,7 +2286,7 @@ English:
 
 > `String` is a class, not a Java keyword.
 
-### 11.10 Collection names are not keywords
+### 12.10 Collection names are not keywords
 
 `ArrayList`、`HashMap`、`Queue`、`Stack`、`PriorityQueue` 都不是关键字，它们是类或接口。
 
@@ -1684,7 +2294,7 @@ English:
 
 > Collection names such as `ArrayList` and `HashMap` are classes or interfaces, not keywords.
 
-## 12. Exam Answer Templates / 英文考试答题模板
+## 13. Exam Answer Templates / 英文考试答题模板
 
 ### Access modifier
 
@@ -1722,7 +2332,7 @@ English:
 
 > `throw` actually throws an exception object, while `throws` declares that a method may throw exceptions.
 
-## 13. Final Priority List / 最后优先背诵清单
+## 14. Final Priority List / 最后优先背诵清单
 
 ### Must know / 必须会
 
