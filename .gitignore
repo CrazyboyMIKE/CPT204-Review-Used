@@ -1,0 +1,35 @@
+.DS_Store
+
+# Java build outputs
+*.class
+out/
+build/
+target/
+bin/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# Course slide/source documents not pushed to GitHub
+*.pdf
+*.ppt
+*.pptx
+*.pptm
+*.doc
+*.docx
+*.docm
+~$*.docx
+~$*.doc
+
+# Local dependency caches
+.m2/
+
+# GitHub rejects files larger than 100 MB.
+# The PDF/PPT patterns above also keep large course files local.
