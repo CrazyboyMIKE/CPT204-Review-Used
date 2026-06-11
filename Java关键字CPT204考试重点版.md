@@ -25,8 +25,8 @@ true false null
 这些不是关键字，但考试和代码里经常一起出现，也会在解释里提到：
 
 ```text
-String Object ArrayList LinkedList Stack Queue PriorityQueue HashSet HashMap
-Comparable Comparator Iterable Iterator Collection List Set Map
+String Object ArrayList LinkedList Stack Queue Deque ArrayDeque PriorityQueue
+HashSet HashMap Comparable Comparator Iterable Iterator Collection List Set Map
 ```
 
 ### Not The Main Focus / 不作为本课程关键复习对象
@@ -1342,7 +1342,562 @@ Exam sentence:
 
 > Due to type erasure, generic type parameters are mainly checked at compile time and are not fully available at runtime.
 
-## 10. Iterator And Iterable / 迭代器与 Iterable
+## 10. Lists, Stacks, Queues, And Priority Queues / 线性表、栈、队列与优先队列
+
+截图中的 `List`、`Stack`、`Queue`、`PriorityQueue` 都是 CPT204 集合与数据结构题里的高频概念。它们**不是 Java keywords**，但它们会和 `class`、`interface`、`implements`、`new`、`for`、`while`、`return`、`import`、泛型 `<E>`、`Comparable`、`Comparator` 一起出现。
+
+Important note:
+
+> `List`, `Stack`, `Queue`, and `PriorityQueue` are not Java keywords. They are collection interfaces/classes or abstract data types used to organize and process data.
+
+### 10.1 Big Picture / 总体区别
+
+中文解释：
+
+- `List<E>`：线性表，按 index 保存元素，允许重复。
+- `Stack<E>`：栈，后进先出 LIFO。
+- `Queue<E>`：队列，先进先出 FIFO。
+- `PriorityQueue<E>`：优先队列，不按插入顺序出队，而按 priority/order 出队。
+
+English explanation:
+
+- `List<E>` is an ordered collection with index-based access and duplicate elements.
+- `Stack<E>` follows Last-In First-Out.
+- `Queue<E>` follows First-In First-Out.
+- `PriorityQueue<E>` removes elements according to priority, not insertion order.
+
+Memory map / 记忆图：
+
+```text
+List           -> ordered by index
+Stack          -> last in, first out
+Queue          -> first in, first out
+PriorityQueue  -> highest priority or smallest element first, depending on ordering
+```
+
+Exam sentence:
+
+> A list stores elements in an ordered sequence, a stack removes the most recently added element first, a queue removes the earliest added element first, and a priority queue removes the element with the highest priority according to its ordering rule.
+
+### 10.2 Interface vs Implementation / 接口和实现类
+
+中文解释：`List`、`Queue`、`Deque` 通常是接口 interface；`ArrayList`、`LinkedList`、`ArrayDeque`、`PriorityQueue` 是常见实现类 class。
+
+English explanation: `List`, `Queue`, and `Deque` are interfaces, while `ArrayList`, `LinkedList`, `ArrayDeque`, and `PriorityQueue` are concrete implementations.
+
+Correct examples:
+
+```java
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+
+public class InterfaceImplementationExample {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<>();
+        Queue<String> tasks = new ArrayDeque<>();
+
+        names.add("Alice");
+        tasks.offer("Revise Java");
+
+        System.out.println(names.get(0));
+        System.out.println(tasks.poll());
+    }
+}
+```
+
+Trap / 坑点：
+
+```java
+// List<String> names = new List<>();   // Compile-time error
+// Queue<String> tasks = new Queue<>(); // Compile-time error
+```
+
+接口不能直接 `new`。要 `new` 一个实现类。
+
+Exam sentence:
+
+> An interface such as `List` or `Queue` specifies operations, while a class such as `ArrayList` or `ArrayDeque` provides the actual implementation.
+
+### 10.3 List, ArrayList, And LinkedList / 线性表、数组表与链表
+
+中文解释：`List<E>` 表示有顺序的 collection。它保留插入顺序，可以通过 index 访问，也允许重复元素。
+
+English explanation: A `List<E>` is an ordered collection that preserves element order, supports index-based access, and allows duplicates.
+
+Complete example:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class ListExample {
+    public static void main(String[] args) {
+        List<String> names = new ArrayList<>();
+
+        names.add("Alice");     // 添加到末尾
+        names.add("Bob");       // 添加到末尾
+        names.add("Alice");     // List 允许重复元素
+
+        String firstName = names.get(0); // 按下标读取，index 从 0 开始
+        names.set(1, "Ben");             // 替换 index 1 的元素
+
+        boolean hasAlice = names.contains("Alice"); // 判断是否包含某个元素
+        int size = names.size();                    // 返回元素数量
+
+        System.out.println(firstName);
+        System.out.println(hasAlice);
+        System.out.println(size);
+
+        names.remove("Alice"); // 删除第一个等于 "Alice" 的元素
+        names.remove(0);       // 删除 index 0 的元素
+
+        System.out.println(names);
+    }
+}
+```
+
+Concrete effect / 具体作用：
+
+- `add(value)`：把元素加到 list 末尾。
+- `add(index, value)`：把元素插入指定位置，后面的元素右移。
+- `get(index)`：读取指定位置元素。
+- `set(index, value)`：替换指定位置元素。
+- `remove(index)`：删除指定位置元素。
+- `remove(object)`：删除第一个相等的对象。
+- `size()`：返回元素个数。
+- `isEmpty()`：判断是否没有元素。
+
+ArrayList vs LinkedList / 常考区别：
+
+```text
+ArrayList:
+fast index access with get(i)
+slow middle insertion/removal because elements may need shifting
+
+LinkedList:
+slow index access with get(i)
+can be efficient for adding/removing at ends
+also implements Deque, so it can act as a queue or deque
+```
+
+Exam sentence:
+
+> `ArrayList` provides efficient random access by index, while `LinkedList` is usually better for frequent insertions or removals near the ends.
+
+Important trap: `remove(int)` vs `remove(Object)` / 重要坑点：删除下标 vs 删除对象
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class ListRemoveTrapExample {
+    public static void main(String[] args) {
+        List<Integer> numbers = new ArrayList<>();
+        numbers.add(1);
+        numbers.add(2);
+        numbers.add(3);
+
+        numbers.remove(1);                  // 删除 index 1 的元素，也就是 2
+        numbers.remove(Integer.valueOf(1)); // 删除值为 1 的元素
+
+        System.out.println(numbers);        // 输出 [3]
+    }
+}
+```
+
+为什么容易错：
+
+- `numbers.remove(1)` 中的 `1` 是 primitive `int`，优先匹配 `remove(int index)`。
+- 如果想删除元素值 `1`，要写 `Integer.valueOf(1)`。
+
+English trap sentence:
+
+> In a `List<Integer>`, `remove(1)` removes the element at index 1, not necessarily the value 1.
+
+### 10.4 Stack / 栈
+
+中文解释：栈 stack 是 LIFO 结构，最后放进去的元素最先出来。常见操作是 `push`、`pop`、`peek`。
+
+English explanation: A stack follows LIFO, meaning the last element pushed is the first element popped.
+
+Java `Stack` class example:
+
+```java
+import java.util.Stack;
+
+public class StackClassExample {
+    public static void main(String[] args) {
+        Stack<Integer> stack = new Stack<>();
+
+        stack.push(10);              // 入栈
+        stack.push(20);              // 20 在栈顶
+
+        int topValue = stack.peek(); // 查看栈顶，但不删除
+        int removed = stack.pop();   // 删除并返回栈顶元素
+
+        System.out.println(topValue); // 20
+        System.out.println(removed);  // 20
+        System.out.println(stack);    // [10]
+    }
+}
+```
+
+Modern preferred Java style / 现代 Java 更推荐：
+
+```java
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class DequeAsStackExample {
+    public static void main(String[] args) {
+        Deque<Integer> stack = new ArrayDeque<>();
+
+        stack.push(10);           // 等价于 addFirst(10)
+        stack.push(20);           // 20 成为栈顶
+
+        int topValue = stack.peek(); // 查看但不删除
+        int removed = stack.pop();   // 删除并返回栈顶
+
+        System.out.println(topValue);
+        System.out.println(removed);
+    }
+}
+```
+
+Concrete effect / 具体作用：
+
+- `push(x)`：把元素压入栈顶。
+- `pop()`：删除并返回栈顶元素。
+- `peek()`：只查看栈顶元素，不删除。
+- `isEmpty()`：检查栈是否为空。
+
+Trap / 坑点：
+
+```java
+Stack<Integer> stack = new Stack<>();
+// stack.pop();  // EmptyStackException
+// stack.peek(); // EmptyStackException
+```
+
+空栈上调用 `pop()` 或 `peek()` 会出错。考试写代码时通常先判断：
+
+```java
+if (!stack.isEmpty()) {
+    int value = stack.pop();
+    System.out.println(value);
+}
+```
+
+Exam sentence:
+
+> A stack is a LIFO structure; `push` inserts an element, `pop` removes the top element, and `peek` reads the top element without removing it.
+
+### 10.5 Queue / 队列
+
+中文解释：队列 queue 是 FIFO 结构，最早进入队列的元素最先出来。常见操作是 `offer`、`poll`、`peek`。
+
+English explanation: A queue follows FIFO, meaning the first element inserted is the first element removed.
+
+Complete example:
+
+```java
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+public class QueueExample {
+    public static void main(String[] args) {
+        Queue<String> queue = new ArrayDeque<>();
+
+        queue.offer("first");       // 入队，放到队尾
+        queue.offer("second");      // 入队，放到队尾
+
+        String head = queue.peek(); // 查看队头，不删除
+        String removed = queue.poll(); // 删除并返回队头
+
+        System.out.println(head);    // first
+        System.out.println(removed); // first
+        System.out.println(queue);   // [second]
+    }
+}
+```
+
+Method pairs / 方法对比：
+
+```text
+offer(x)  -> add x to tail, returns false if it cannot insert
+add(x)    -> add x to tail, may throw exception if it cannot insert
+
+poll()    -> remove head, returns null if empty
+remove()  -> remove head, throws exception if empty
+
+peek()    -> read head, returns null if empty
+element() -> read head, throws exception if empty
+```
+
+中文记忆：
+
+- `offer` / `poll` / `peek` 比较温和，失败时通常返回 `false` 或 `null`。
+- `add` / `remove` / `element` 更严格，失败时可能抛异常。
+- 普通算法题里更常用 `offer`、`poll`、`peek`。
+
+Exam sentence:
+
+> A queue is a FIFO structure; `offer` inserts at the tail, `poll` removes the head, and `peek` reads the head without removing it.
+
+Trap / 坑点：
+
+```java
+Queue<String> queue = new ArrayDeque<>();
+
+String value = queue.poll(); // null, because the queue is empty
+System.out.println(value);
+```
+
+如果 `poll()` 返回 `null`，可能表示队列为空，所以不要把 `null` 当作普通数据放进队列。`ArrayDeque` 和 `PriorityQueue` 不允许 `null` 元素。
+
+### 10.6 Deque And ArrayDeque / 双端队列与 ArrayDeque
+
+中文解释：`Deque<E>` 表示 double-ended queue，双端都可以添加和删除。它可以当 stack 用，也可以当 queue 用。
+
+English explanation: A `Deque<E>` is a double-ended queue that supports insertion and removal at both ends. It can be used as either a stack or a queue.
+
+Complete example:
+
+```java
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class DequeExample {
+    public static void main(String[] args) {
+        Deque<String> deque = new ArrayDeque<>();
+
+        deque.addFirst("front"); // 加到队头
+        deque.addLast("back");   // 加到队尾
+
+        String first = deque.peekFirst(); // 查看队头
+        String last = deque.peekLast();   // 查看队尾
+
+        System.out.println(first);
+        System.out.println(last);
+
+        deque.removeFirst(); // 删除队头
+        deque.removeLast();  // 删除队尾
+    }
+}
+```
+
+Common methods / 常用方法：
+
+```text
+addFirst(x), removeFirst(), peekFirst()
+addLast(x),  removeLast(),  peekLast()
+push(x), pop(), peek()
+offer(x), poll(), peek()
+```
+
+Exam sentence:
+
+> `Deque` is more flexible than a simple queue because it allows operations at both the front and the back.
+
+Trap / 坑点：
+
+`ArrayDeque` 通常比旧的 `Stack` 类更适合实现栈，也比 `LinkedList` 更常用来实现普通队列。但如果课程或题目明确使用 `Stack`，你仍然要会 `Stack` 的 `push`、`pop`、`peek`。
+
+### 10.7 PriorityQueue / 优先队列
+
+中文解释：`PriorityQueue<E>` 不是普通 FIFO 队列。它每次 `poll()` 出来的不是最早加入的元素，而是优先级最高的元素。Java 默认情况下，对数字来说通常是最小值先出。
+
+English explanation: A `PriorityQueue<E>` is not a FIFO queue. It removes elements according to their priority. By default, Java's priority queue gives the smallest element first for natural ordering.
+
+Integer example:
+
+```java
+import java.util.PriorityQueue;
+
+public class PriorityQueueIntegerExample {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> numbers = new PriorityQueue<>();
+
+        numbers.offer(30);
+        numbers.offer(10);
+        numbers.offer(20);
+
+        System.out.println(numbers.poll()); // 10
+        System.out.println(numbers.poll()); // 20
+        System.out.println(numbers.poll()); // 30
+    }
+}
+```
+
+Max-priority example with `Comparator`:
+
+```java
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+public class PriorityQueueMaxExample {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> numbers = new PriorityQueue<>(Comparator.reverseOrder());
+
+        numbers.offer(30);
+        numbers.offer(10);
+        numbers.offer(20);
+
+        System.out.println(numbers.poll()); // 30
+        System.out.println(numbers.poll()); // 20
+        System.out.println(numbers.poll()); // 10
+    }
+}
+```
+
+Object example with custom comparator:
+
+```java
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+public class PriorityQueueTaskExample {
+    public static void main(String[] args) {
+        PriorityQueue<Task> tasks = new PriorityQueue<>(new TaskPriorityComparator());
+
+        tasks.offer(new Task("Read notes", 2));
+        tasks.offer(new Task("Finish TTL", 5));
+        tasks.offer(new Task("Review exam traps", 4));
+
+        while (!tasks.isEmpty()) {
+            Task task = tasks.poll();
+            System.out.println(task.getName() + ":" + task.getPriority());
+        }
+    }
+}
+
+class Task {
+    private String name;
+    private int priority;
+
+    public Task(String name, int priority) {
+        this.name = name;
+        this.priority = priority;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+}
+
+class TaskPriorityComparator implements Comparator<Task> {
+    @Override
+    public int compare(Task first, Task second) {
+        return Integer.compare(second.getPriority(), first.getPriority());
+    }
+}
+```
+
+这段代码中，priority 数字越大越先出队，所以 `compare` 写成 `second - first` 的方向。更安全的写法是 `Integer.compare(...)`，避免整数溢出。
+
+Concrete effect / 具体作用：
+
+- `offer(x)`：加入优先队列。
+- `peek()`：查看当前最高优先级元素，但不删除。
+- `poll()`：删除并返回当前最高优先级元素。
+- 没有 comparator 时，元素需要能 natural ordering，例如 `Integer`、`String` 或实现 `Comparable` 的对象。
+- 有 comparator 时，按照 comparator 的规则决定优先级。
+
+Exam sentence:
+
+> A priority queue removes elements according to priority rather than insertion order; in Java, natural ordering makes the smallest element come out first unless a comparator changes the order.
+
+Important trap: iteration is not sorted / 重要坑点：遍历不等于排序
+
+```java
+PriorityQueue<Integer> numbers = new PriorityQueue<>();
+numbers.offer(30);
+numbers.offer(10);
+numbers.offer(20);
+
+for (int number : numbers) {
+    System.out.println(number); // Not guaranteed to be 10, 20, 30
+}
+```
+
+如果想按优先级顺序取出元素，要反复 `poll()`，不要依赖 enhanced `for` 的遍历顺序。
+
+English trap sentence:
+
+> Iterating over a `PriorityQueue` does not guarantee sorted order; repeated `poll()` operations are needed to retrieve elements in priority order.
+
+### 10.8 Complexity Summary / 复杂度总结
+
+这些复杂度是考试常见简化版，具体实现细节可能更复杂，但足够应对 CPT204 的常见选择题、解释题和代码题。
+
+```text
+ArrayList get/set by index: O(1)
+ArrayList add at end: usually O(1) amortized
+ArrayList insert/remove in middle: O(n)
+
+LinkedList get by index: O(n)
+LinkedList add/remove at known end: O(1)
+LinkedList search: O(n)
+
+Stack push/pop/peek: usually O(1)
+Queue offer/poll/peek with ArrayDeque: usually O(1)
+PriorityQueue offer/poll: O(log n)
+PriorityQueue peek: O(1)
+```
+
+Exam sentence:
+
+> The choice of collection affects time complexity; for example, `ArrayList` is efficient for index access, while `PriorityQueue` is efficient for repeatedly removing the next highest-priority element.
+
+### 10.9 Exam Traps For These Structures / 这些结构的考试坑点
+
+1. `List` is ordered, but not automatically sorted.  
+   `List` 保留顺序，但不会自动排序。
+
+2. `List` allows duplicates.  
+   `List` 允许重复元素，和 `Set` 不一样。
+
+3. `Queue` is an interface, so `new Queue<>()` is invalid.  
+   `Queue` 是接口，不能直接实例化。
+
+4. `PriorityQueue` is not FIFO.  
+   `PriorityQueue` 不是普通先进先出队列。
+
+5. `peek()` reads but does not remove; `poll()` or `pop()` removes.  
+   `peek()` 只看不删，`poll()` / `pop()` 会删除。
+
+6. `Stack.pop()` on an empty stack throws an exception.  
+   空栈 `pop()` 会出错，先检查 `isEmpty()`。
+
+7. `Queue.poll()` on an empty queue returns `null`.  
+   空队列 `poll()` 通常返回 `null`，所以队列中不要存 `null`。
+
+8. `PriorityQueue` needs comparable elements or a comparator.  
+   优先队列里的对象要么能自然比较，要么提供 comparator。
+
+9. `ArrayList<Integer>.remove(1)` removes by index.  
+   `ArrayList<Integer>.remove(1)` 删除 index 1，不一定是值 1。
+
+10. Big-O depends on the implementation, not only the interface name.  
+    复杂度取决于实现类，不只取决于接口名。
+
+Short English answers to memorize / 可背英文短句：
+
+```text
+A List is an ordered collection that allows duplicates and supports index-based access.
+A Stack is a LIFO structure.
+A Queue is a FIFO structure.
+A PriorityQueue removes elements according to priority, not insertion order.
+ArrayDeque can be used as an efficient stack or queue implementation.
+```
+
+## 11. Iterator And Iterable / 迭代器与 Iterable
 
 重要说明：`Iterator`、`Iterable`、`hasNext()`、`next()`、`remove()` **都不是 Java keywords**。它们是接口或方法名。但 CPT204 的集合、增强 `for`、遍历题中经常出现，所以必须会。
 
@@ -1350,7 +1905,7 @@ Important note:
 
 > `Iterator` and `Iterable` are not Java keywords. They are interfaces used by the Java Collections Framework.
 
-### 10.1 Enhanced `for` and `Iterable`
+### 11.1 Enhanced `for` and `Iterable`
 
 中文解释：增强 `for` 可以遍历数组，也可以遍历实现了 `Iterable` 的对象。
 
@@ -1388,7 +1943,7 @@ for (String name : names) {
 }
 ```
 
-### 10.2 Manual Iterator / 手动使用 Iterator
+### 11.2 Manual Iterator / 手动使用 Iterator
 
 中文解释：`Iterator<E>` 是一个遍历集合的对象。常用方法是 `hasNext()` 和 `next()`。
 
@@ -1424,7 +1979,7 @@ Iterator<String> iterator = names.iterator();
 // String value = iterator.next(); // If empty, NoSuchElementException
 ```
 
-### 10.3 Safe Removal With Iterator / 用 Iterator 安全删除
+### 11.3 Safe Removal With Iterator / 用 Iterator 安全删除
 
 中文解释：遍历集合时，如果需要删除当前元素，应该使用 iterator 的 `remove()`，而不是集合自己的 `remove()`。
 
@@ -1461,7 +2016,7 @@ Iterator<String> iterator = names.iterator();
 
 必须先调用 `next()`，再调用 `remove()`。
 
-### 10.4 Implementing Iterable / 自定义类实现 Iterable
+### 11.4 Implementing Iterable / 自定义类实现 Iterable
 
 中文解释：如果一个自定义类实现 `Iterable<E>`，它就可以被增强 `for` 遍历。
 
@@ -1516,7 +2071,7 @@ Iterable：可被遍历的对象
 Iterator：真正执行遍历的迭代器对象
 ```
 
-### 10.5 Iterator vs Index Loop / 迭代器 vs 下标循环
+### 11.5 Iterator vs Index Loop / 迭代器 vs 下标循环
 
 中文解释：数组和 `ArrayList` 适合下标循环；`LinkedList` 用下标访问可能很慢，更适合 iterator 或 enhanced for。
 
@@ -1536,7 +2091,7 @@ Exam sentence:
 
 > Index-based access is efficient for arrays and `ArrayList`, but iterator-based traversal is often better for `LinkedList`.
 
-### 10.6 Iterator Exam Traps / 迭代器考试坑点
+### 11.6 Iterator Exam Traps / 迭代器考试坑点
 
 1. `Iterator` is not a keyword.  
    `Iterator` 不是关键字，是接口。
@@ -1556,13 +2111,13 @@ Exam sentence:
 6. `Iterable` produces an `Iterator`; `Iterator` performs the traversal.  
    `Iterable` 产生迭代器；`Iterator` 真正遍历。
 
-## 11. Complete Java Example Bank / 完整 Java 示例库
+## 12. Complete Java Example Bank / 完整 Java 示例库
 
 这一节把前面零散讲到的关键字组合成完整 Java 文件形式。每个代码块都可以复制到对应文件名中运行。这样你能看到关键字在真实 Java 程序里的位置，而不是只看到孤立片段。
 
 This section rewrites the important examples as complete Java files. Each code block can be copied into a `.java` file with the same public class name.
 
-### 11.1 Access Modifier Complete Example
+### 12.1 Access Modifier Complete Example
 
 File name:
 
@@ -1627,7 +2182,7 @@ English exam sentence:
 
 > `private` hides data inside the class, while `protected` allows subclass access and same-package access.
 
-### 11.2 OOP Keywords Complete Example
+### 12.2 OOP Keywords Complete Example
 
 File name:
 
@@ -1722,7 +2277,7 @@ English exam sentence:
 
 > `extends` creates an inheritance relationship, while `implements` connects a class to an interface contract.
 
-### 11.3 Primitive Types And Control Flow Complete Example
+### 12.3 Primitive Types And Control Flow Complete Example
 
 File name:
 
@@ -1809,7 +2364,7 @@ English exam sentence:
 
 > `break` terminates the loop or switch, while `continue` skips only the current loop iteration.
 
-### 11.4 Exception Handling Complete Example
+### 12.4 Exception Handling Complete Example
 
 File name:
 
@@ -1860,7 +2415,7 @@ English exam sentence:
 
 > `throw` actually throws an exception object, while `throws` declares that a method may throw exceptions.
 
-### 11.5 Enum And Import Complete Example
+### 12.5 Enum And Import Complete Example
 
 File name:
 
@@ -1934,7 +2489,7 @@ English exam sentence:
 
 > An enum defines a fixed set of constants and is safer than using strings for fixed categories.
 
-### 11.6 Generics Complete Example
+### 12.6 Generics Complete Example
 
 File name:
 
@@ -2061,7 +2616,7 @@ English exam sentence:
 
 > Generics provide compile-time type safety and reduce the need for explicit casts.
 
-### 11.7 Iterator And Iterable Complete Example
+### 12.7 Iterator And Iterable Complete Example
 
 File name:
 
@@ -2125,7 +2680,124 @@ English exam sentence:
 
 > `Iterable` represents something that can be iterated over, while `Iterator` is the object that performs the traversal.
 
-### 11.8 Null And Reference Complete Example
+### 12.8 List Stack Queue PriorityQueue Complete Example
+
+File name:
+
+```text
+CollectionAdtExample.java
+```
+
+```java
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
+
+public class CollectionAdtExample {
+    public static void main(String[] args) {
+        demonstrateList();
+        demonstrateStack();
+        demonstrateQueue();
+        demonstratePriorityQueue();
+    }
+
+    public static void demonstrateList() {
+        List<String> names = new ArrayList<>();
+
+        names.add("Alice");     // 添加到末尾
+        names.add("Bob");       // 添加到末尾
+        names.add("Alice");     // List 允许重复元素
+
+        System.out.println("List first: " + names.get(0));
+        System.out.println("List size: " + names.size());
+
+        names.set(1, "Ben");    // 替换 index 1 的元素
+        names.remove("Alice");  // 删除第一个匹配的对象
+
+        System.out.println("List after changes: " + names);
+    }
+
+    public static void demonstrateStack() {
+        Deque<Integer> stack = new ArrayDeque<>();
+
+        stack.push(10);          // 入栈
+        stack.push(20);          // 20 成为栈顶
+
+        System.out.println("Stack peek: " + stack.peek()); // 查看但不删除
+        System.out.println("Stack pop: " + stack.pop());   // 删除并返回栈顶
+        System.out.println("Stack after pop: " + stack);
+    }
+
+    public static void demonstrateQueue() {
+        Queue<String> queue = new ArrayDeque<>();
+
+        queue.offer("first");    // 入队，放到队尾
+        queue.offer("second");   // 入队，放到队尾
+
+        System.out.println("Queue peek: " + queue.peek()); // 查看队头
+        System.out.println("Queue poll: " + queue.poll()); // 删除并返回队头
+        System.out.println("Queue after poll: " + queue);
+    }
+
+    public static void demonstratePriorityQueue() {
+        PriorityQueue<Task> tasks = new PriorityQueue<>(new TaskPriorityComparator());
+
+        tasks.offer(new Task("Read notes", 2));
+        tasks.offer(new Task("Finish TTL", 5));
+        tasks.offer(new Task("Review exam traps", 4));
+
+        while (!tasks.isEmpty()) {
+            Task task = tasks.poll(); // 每次取出当前最高优先级任务
+            System.out.println("Priority task: " + task.getName());
+        }
+    }
+}
+
+class Task {
+    private String name;
+    private int priority;
+
+    public Task(String name, int priority) {
+        this.name = name;
+        this.priority = priority;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+}
+
+class TaskPriorityComparator implements Comparator<Task> {
+    @Override
+    public int compare(Task first, Task second) {
+        return Integer.compare(second.getPriority(), first.getPriority());
+    }
+}
+```
+
+这个例子同时展示：
+
+- `List<String>`：接口类型保存 `ArrayList` 对象。
+- `ArrayList`：支持 index-based access。
+- `Deque<Integer>`：用 `ArrayDeque` 实现 stack。
+- `Queue<String>`：用 `ArrayDeque` 实现 FIFO queue。
+- `PriorityQueue<Task>`：用 comparator 决定出队优先级。
+- `Comparator<Task>`：外部比较规则。
+- `while (!tasks.isEmpty())`：持续取出优先级最高的元素。
+
+English exam sentence:
+
+> `ArrayDeque` can implement both stack and queue behavior, while `PriorityQueue` removes elements according to a comparator or natural ordering.
+
+### 12.9 Null And Reference Complete Example
 
 File name:
 
@@ -2166,9 +2838,9 @@ English exam sentence:
 
 > `null` means that a reference variable does not refer to any object.
 
-## 12. Exam Trap Bank / CPT204 高频坑点库
+## 13. Exam Trap Bank / CPT204 高频坑点库
 
-### 12.1 `static` is not constant
+### 13.1 `static` is not constant
 
 `static` 表示属于类，不代表不能修改。常量通常写成：
 
@@ -2180,7 +2852,7 @@ English:
 
 > `static` does not mean constant; constants are usually declared with `static final`.
 
-### 12.2 `final` reference is not deep immutable
+### 13.2 `final` reference is not deep immutable
 
 ```java
 final ArrayList<String> list = new ArrayList<>();
@@ -2191,7 +2863,7 @@ English:
 
 > `final` prevents reassignment of the reference, not mutation of the object.
 
-### 12.3 `private` is not directly visible to subclasses
+### 13.3 `private` is not directly visible to subclasses
 
 ```java
 class A {
@@ -2209,7 +2881,7 @@ English:
 
 > Private members are not directly accessible in subclasses.
 
-### 12.4 `throw` vs `throws`
+### 13.4 `throw` vs `throws`
 
 ```java
 throw new IllegalArgumentException();
@@ -2227,7 +2899,7 @@ English:
 
 > `throw` performs the throwing action, while `throws` declares possible exceptions.
 
-### 12.5 `break` vs `continue`
+### 13.5 `break` vs `continue`
 
 ```java
 for (int i = 1; i <= 3; i++) {
@@ -2246,7 +2918,7 @@ Output:
 
 `continue` 只跳过当前一轮，不结束整个循环。
 
-### 12.6 `switch` fall-through
+### 13.6 `switch` fall-through
 
 没有 `break` 会继续往下执行。
 
@@ -2254,7 +2926,7 @@ English:
 
 > Missing `break` in a traditional switch statement may cause fall-through.
 
-### 12.7 integer division
+### 13.7 integer division
 
 ```java
 double result = 5 / 2;
@@ -2269,7 +2941,7 @@ System.out.println(result); // 2.0
 double result = 5 / 2.0;
 ```
 
-### 12.8 `char` plus int
+### 13.8 `char` plus int
 
 ```java
 char c = 'A';
@@ -2278,7 +2950,7 @@ System.out.println(c + 1); // 66
 
 `char` 算术运算时提升为 int。
 
-### 12.9 `String` is not a keyword
+### 13.9 `String` is not a keyword
 
 `String` 很常用，但它不是 Java keyword，它是 `java.lang.String` 类。
 
@@ -2286,15 +2958,117 @@ English:
 
 > `String` is a class, not a Java keyword.
 
-### 12.10 Collection names are not keywords
+### 13.10 Collection names are not keywords
 
-`ArrayList`、`HashMap`、`Queue`、`Stack`、`PriorityQueue` 都不是关键字，它们是类或接口。
+`ArrayList`、`LinkedList`、`Queue`、`Deque`、`ArrayDeque`、`Stack`、`PriorityQueue`、`HashMap` 都不是关键字，它们是类或接口。
 
 English:
 
 > Collection names such as `ArrayList` and `HashMap` are classes or interfaces, not keywords.
 
-## 13. Exam Answer Templates / 英文考试答题模板
+### 13.11 `List` order is not the same as sorted order
+
+`List` 是有顺序 ordered，意思是它保留元素的排列位置和 index，不代表它会自动按大小排序。
+
+```java
+List<Integer> numbers = new ArrayList<>();
+numbers.add(30);
+numbers.add(10);
+numbers.add(20);
+
+System.out.println(numbers); // [30, 10, 20]
+```
+
+English:
+
+> A `List` is ordered, but it is not automatically sorted.
+
+### 13.12 `remove(1)` in `List<Integer>` may remove by index
+
+```java
+List<Integer> numbers = new ArrayList<>();
+numbers.add(1);
+numbers.add(2);
+numbers.add(3);
+
+numbers.remove(1); // removes index 1, so value 2 is removed
+```
+
+如果想删除值为 1 的对象：
+
+```java
+numbers.remove(Integer.valueOf(1));
+```
+
+English:
+
+> In `List<Integer>`, `remove(1)` calls `remove(int index)`, so it removes the element at index 1.
+
+### 13.13 `peek`, `pop`, and `poll` are different
+
+```java
+Deque<Integer> stack = new ArrayDeque<>();
+stack.push(10);
+
+System.out.println(stack.peek()); // reads 10, stack still has 10
+System.out.println(stack.pop());  // removes 10
+```
+
+```java
+Queue<Integer> queue = new ArrayDeque<>();
+queue.offer(10);
+
+System.out.println(queue.peek()); // reads 10, queue still has 10
+System.out.println(queue.poll()); // removes 10
+```
+
+English:
+
+> `peek` reads without removing, while `pop` and `poll` remove an element.
+
+### 13.14 `PriorityQueue` is not FIFO
+
+```java
+PriorityQueue<Integer> numbers = new PriorityQueue<>();
+numbers.offer(30);
+numbers.offer(10);
+numbers.offer(20);
+
+System.out.println(numbers.poll()); // 10, not 30
+```
+
+`PriorityQueue` 默认按照 natural ordering，`Integer` 会让最小值先出来。
+
+English:
+
+> A `PriorityQueue` removes elements by priority rather than insertion order.
+
+### 13.15 Iterating a `PriorityQueue` is not sorted
+
+```java
+PriorityQueue<Integer> numbers = new PriorityQueue<>();
+numbers.offer(30);
+numbers.offer(10);
+numbers.offer(20);
+
+for (int number : numbers) {
+    System.out.println(number); // order is not guaranteed to be sorted
+}
+```
+
+如果题目要求按优先级顺序处理，要用：
+
+```java
+while (!numbers.isEmpty()) {
+    System.out.println(numbers.poll());
+}
+```
+
+English:
+
+> Repeated `poll()` operations retrieve priority-queue elements in priority order; iteration does not guarantee sorted order.
+
+## 14. Exam Answer Templates / 英文考试答题模板
 
 ### Access modifier
 
@@ -2332,7 +3106,39 @@ English:
 
 > `throw` actually throws an exception object, while `throws` declares that a method may throw exceptions.
 
-## 14. Final Priority List / 最后优先背诵清单
+### List
+
+> A `List` is an ordered collection that allows duplicate elements and supports index-based access.
+
+### ArrayList
+
+> `ArrayList` is a resizable-array implementation of `List`; it provides efficient index access but may be slow for insertions or removals in the middle.
+
+### LinkedList
+
+> `LinkedList` stores elements as linked nodes; index access is usually slower than `ArrayList`, but it can support efficient operations at the ends.
+
+### Stack
+
+> A stack is a LIFO structure, where the last element pushed is the first element popped.
+
+### Queue
+
+> A queue is a FIFO structure, where the first element inserted is the first element removed.
+
+### Deque
+
+> A `Deque` is a double-ended queue that supports insertion and removal at both the front and the back.
+
+### PriorityQueue
+
+> A `PriorityQueue` removes elements according to priority rather than insertion order.
+
+### Comparator with PriorityQueue
+
+> A comparator can define the priority order for objects stored in a `PriorityQueue`.
+
+## 15. Final Priority List / 最后优先背诵清单
 
 ### Must know / 必须会
 
@@ -2358,12 +3164,26 @@ assert
 ### Know as related concepts / 作为相关概念认识
 
 ```text
-String Object ArrayList HashMap HashSet Queue Stack PriorityQueue
+String Object ArrayList LinkedList HashMap HashSet
+Queue Deque ArrayDeque Stack PriorityQueue
 Comparable Comparator Collection List Set Map
 Iterable Iterator
 ```
 
 这些不是关键字，但 CPT204 里非常常见。
+
+### Collection method names to remember / 集合方法名速记
+
+```text
+List: add get set remove contains size isEmpty
+Stack: push pop peek isEmpty
+Queue: offer poll peek add remove element
+Deque: addFirst addLast removeFirst removeLast peekFirst peekLast
+PriorityQueue: offer poll peek
+Ordering: compare compareTo
+```
+
+这些也不是关键字，但它们经常出现在集合、栈、队列、优先队列和排序代码里。
 
 ### Generic syntax to remember / 泛型语法记忆
 

@@ -663,6 +663,88 @@ PECS rule:
 - 泛型类不能 extends `Throwable`。
 - static 字段不能依赖类的类型参数。
 
+### 6.8 Generics With Collections: Exam Keywords / 集合泛型里的高频关键字
+
+很多 CPT204 题不是直接问 “what is `extends`?”，而是给你一段集合、泛型、排序代码，让你解释为什么能比较、为什么能遍历、为什么不能 `new List<>()`。
+
+Many CPT204 questions do not ask keywords in isolation. They place keywords inside collection and generic code, then ask you to reason about type safety, ordering, traversal, or object creation.
+
+Key patterns / 关键模式:
+
+```java
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.PriorityQueue;
+
+public class GenericCollectionKeywordExample {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>();
+        students.add(new Student("Alice", 88));
+        students.add(new Student("Bob", 75));
+
+        students.sort(new MarkComparator());
+
+        PriorityQueue<Student> queue = new PriorityQueue<>(new MarkComparator());
+        queue.offer(new Student("Cathy", 92));
+        queue.offer(new Student("David", 70));
+
+        while (!queue.isEmpty()) {
+            Student student = queue.poll();
+            System.out.println(student.getName());
+        }
+    }
+}
+
+class Student {
+    private String name;
+    private int mark;
+
+    public Student(String name, int mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getMark() {
+        return mark;
+    }
+}
+
+class MarkComparator implements Comparator<Student> {
+    @Override
+    public int compare(Student first, Student second) {
+        return Integer.compare(second.getMark(), first.getMark());
+    }
+}
+```
+
+Keyword explanation / 关键字解释:
+
+- `import`: brings collection classes/interfaces into the file.  
+  `import` 把 `List`、`ArrayList`、`PriorityQueue`、`Comparator` 等名字导入当前文件。
+- `class`: defines a blueprint for objects.  
+  `class` 定义对象模板，例如 `Student`。
+- `interface`: `Comparator` is an interface, meaning it defines a contract.  
+  `Comparator` 是接口，规定实现类必须提供 `compare` 方法。
+- `implements`: `MarkComparator implements Comparator<Student>` means the class promises to provide comparison logic.  
+  `implements` 表示类实现接口承诺。
+- `new`: creates concrete objects such as `new ArrayList<>()`; interfaces cannot be directly instantiated.  
+  `new` 创建具体对象；不能 `new List<>()` 或 `new Comparator<>()`。
+- `while`: repeatedly processes the priority queue until it is empty.  
+  `while` 用于反复处理优先队列直到为空。
+- `return`: sends comparison result back to the caller.  
+  `return` 返回比较结果。
+
+Exam wording / 英文答题句:
+
+> `List<Student>` gives compile-time type safety, while `new ArrayList<>()` creates the concrete resizable-list object.
+
+> `Comparator<Student>` defines an external ordering rule, which can be used by sorting methods and priority queues.
+
 ---
 
 ## 7. Java Collections Framework / Java 集合框架
@@ -677,6 +759,30 @@ PECS rule:
 - `PriorityQueue`: priority order, not arrival order.
 
 **Map** 家族存 key-value pairs，不属于 `Collection` 接口。
+
+接口 vs 实现 / Interface vs implementation:
+
+| Interface / 接口 | Common implementation / 常见实现 | Main idea / 核心用途 |
+|---|---|---|
+| `List<E>` | `ArrayList<E>`, `LinkedList<E>` | ordered sequence with duplicates |
+| `Set<E>` | `HashSet<E>`, `LinkedHashSet<E>`, `TreeSet<E>` | unique elements |
+| `Queue<E>` | `ArrayDeque<E>`, `LinkedList<E>`, `PriorityQueue<E>` | process elements by a rule |
+| `Deque<E>` | `ArrayDeque<E>`, `LinkedList<E>` | double-ended queue, also usable as stack |
+| `Map<K,V>` | `HashMap<K,V>`, `LinkedHashMap<K,V>`, `TreeMap<K,V>` | key-value lookup |
+
+关键考试句 / Exam sentence:
+
+> An interface specifies what operations are available, while an implementation class decides how those operations are stored and how efficient they are.
+
+常见错误 / Common trap:
+
+```java
+// List<String> names = new List<>();   // wrong: List is an interface
+// Queue<String> queue = new Queue<>(); // wrong: Queue is an interface
+
+List<String> names = new ArrayList<>();     // correct
+Queue<String> queue = new ArrayDeque<>();   // correct
+```
 
 ### 7.2 `Collection<E>` Interface
 
@@ -719,6 +825,10 @@ collection.forEach(e -> System.out.println(e));
 
 **English:** A list is ordered, allows duplicates, and supports positional access.
 
+这里的 ordered 是“有位置、有下标、保留插入后的排列”，不是 automatically sorted。`List` 不会自动从小到大排序。
+
+Here, ordered means elements have positions and indexes. It does not mean automatically sorted.
+
 核心方法:
 
 - `add(index, element)`
@@ -733,6 +843,47 @@ collection.forEach(e -> System.out.println(e));
 - 可以双向移动：`hasPrevious`, `previous`
 - 可以在迭代中 `add`, `set`
 
+完整例子 / Complete example:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class ListReviewExample {
+    public static void main(String[] args) {
+        List<Integer> numbers = new ArrayList<>();
+
+        numbers.add(30);
+        numbers.add(10);
+        numbers.add(20);
+
+        System.out.println(numbers.get(0)); // 30
+        System.out.println(numbers);        // [30, 10, 20], not sorted
+
+        numbers.set(1, 15);                 // replace index 1
+        numbers.remove(0);                  // remove index 0
+
+        System.out.println(numbers);        // [15, 20]
+    }
+}
+```
+
+`List<Integer>` 的 `remove` 重载坑 / `remove` overload trap:
+
+```java
+List<Integer> values = new ArrayList<>();
+values.add(1);
+values.add(2);
+values.add(3);
+
+values.remove(1);                  // removes index 1, so value 2 is removed
+values.remove(Integer.valueOf(1)); // removes the object/value 1
+```
+
+英文考试句 / Exam sentence:
+
+> A `List` is ordered by index but not necessarily sorted by value.
+
 ### 7.5 ArrayList vs LinkedList
 
 | Feature / 特性 | ArrayList | LinkedList |
@@ -744,6 +895,18 @@ collection.forEach(e -> System.out.println(e));
 | Best use | frequent reading/access | frequent head/tail operations |
 
 **复习结论：** 不确定时优先 `ArrayList`；只有明确需要高频头部/尾部插删或队列/双端队列操作时考虑 `LinkedList`。
+
+更精确地说 / More precisely:
+
+- `ArrayList.get(i)` 是 `O(1)`，因为底层像数组一样可以直接定位。
+- `LinkedList.get(i)` 是 `O(n)`，因为要沿节点走过去。
+- `ArrayList` 在中间插入/删除通常是 `O(n)`，因为后面的元素要整体移动。
+- `LinkedList` 如果已经有节点位置，改链接可以是 `O(1)`；但如果先按 index 找节点，查找本身仍然是 `O(n)`。
+- `LinkedList` implements `Deque`，所以可以做 queue/deque，但实际写普通 stack/queue 时 `ArrayDeque` 更常见。
+
+考试坑 / Exam trap:
+
+> Do not simply say "`LinkedList` insertion is always O(1)." It is O(1) only when the node position is already known; finding the position may still cost O(n).
 
 ### 7.6 `Arrays.asList` and `List.of`
 
@@ -787,6 +950,34 @@ collection.forEach(e -> System.out.println(e));
 - 方法：`push`, `pop`, `peek`, `empty`, `search`。
 - `search` 从栈顶开始数，返回 1-based position，不是数组下标。
 
+现代 Java 中更常推荐 / More modern Java style:
+
+```java
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class StackWithDequeExample {
+    public static void main(String[] args) {
+        Deque<Integer> stack = new ArrayDeque<>();
+
+        stack.push(10);             // push to top
+        stack.push(20);             // 20 is now the top
+
+        System.out.println(stack.peek()); // read top, do not remove
+        System.out.println(stack.pop());  // remove top
+    }
+}
+```
+
+关键区别 / Key distinction:
+
+- `peek()` reads the top element without removing it.  
+  `peek()` 只看栈顶，不删除。
+- `pop()` removes and returns the top element.  
+  `pop()` 删除并返回栈顶。
+- Calling `pop()` on an empty stack may throw an exception.  
+  空栈 `pop()` 可能抛异常，代码题里先检查 `isEmpty()`。
+
 ### 7.9 Queue and PriorityQueue / 队列与优先队列
 
 `Queue`:
@@ -795,6 +986,39 @@ collection.forEach(e -> System.out.println(e));
 - 安全方法：`offer`, `poll`, `peek`，空队列时返回 `false/null`。
 - 风险方法：`add`, `remove`, `element`，失败时可能抛异常。
 
+Queue method pairs / 队列方法对:
+
+| Purpose / 目的 | Safer method / 温和方法 | Exception method / 异常方法 |
+|---|---|---|
+| insert at tail | `offer(e)` | `add(e)` |
+| remove head | `poll()` | `remove()` |
+| read head | `peek()` | `element()` |
+
+完整例子 / Complete example:
+
+```java
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+public class QueueReviewExample {
+    public static void main(String[] args) {
+        Queue<String> queue = new ArrayDeque<>();
+
+        queue.offer("first");
+        queue.offer("second");
+
+        System.out.println(queue.peek()); // first, not removed
+        System.out.println(queue.poll()); // first, removed
+        System.out.println(queue.poll()); // second, removed
+        System.out.println(queue.poll()); // null, because empty
+    }
+}
+```
+
+英文考试句 / Exam sentence:
+
+> A queue is a FIFO structure: `offer` inserts at the tail, `poll` removes the head, and `peek` reads the head without removing it.
+
 `PriorityQueue`:
 
 - 按优先级出队，不按插入顺序。
@@ -802,6 +1026,136 @@ collection.forEach(e -> System.out.println(e));
 - 可传入 `Comparator` 改变优先级。
 - 不允许 `null`。
 - 元素必须 comparable 或提供 comparator。
+
+完整例子 / Complete example:
+
+```java
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+public class PriorityQueueReviewExample {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> minQueue = new PriorityQueue<>();
+        minQueue.offer(30);
+        minQueue.offer(10);
+        minQueue.offer(20);
+
+        System.out.println(minQueue.poll()); // 10
+
+        PriorityQueue<Integer> maxQueue = new PriorityQueue<>(Comparator.reverseOrder());
+        maxQueue.offer(30);
+        maxQueue.offer(10);
+        maxQueue.offer(20);
+
+        System.out.println(maxQueue.poll()); // 30
+    }
+}
+```
+
+对象优先级 / Object priority:
+
+```java
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+public class TaskPriorityExample {
+    public static void main(String[] args) {
+        PriorityQueue<Task> tasks = new PriorityQueue<>(new TaskComparator());
+
+        tasks.offer(new Task("Read notes", 2));
+        tasks.offer(new Task("Finish TTL", 5));
+        tasks.offer(new Task("Review traps", 4));
+
+        while (!tasks.isEmpty()) {
+            System.out.println(tasks.poll().getName());
+        }
+    }
+}
+
+class Task {
+    private String name;
+    private int priority;
+
+    public Task(String name, int priority) {
+        this.name = name;
+        this.priority = priority;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+}
+
+class TaskComparator implements Comparator<Task> {
+    @Override
+    public int compare(Task first, Task second) {
+        return Integer.compare(second.getPriority(), first.getPriority());
+    }
+}
+```
+
+为什么 `second` 在前 / Why `second` comes first:
+
+- Java `PriorityQueue` 默认让“比较结果更小”的对象先出来。
+- `Integer.compare(second.getPriority(), first.getPriority())` 会让 priority 较大的任务排在前面。
+- 用 `Integer.compare` 比直接写 `second.getPriority() - first.getPriority()` 更安全，因为避免整数溢出。
+
+PriorityQueue 坑点 / PriorityQueue traps:
+
+- It is not FIFO.  
+  它不是普通先进先出队列。
+- Iteration is not sorted. Use repeated `poll()` to get priority order.  
+  enhanced `for` 遍历 `PriorityQueue` 不保证有序；要按优先级顺序取出，反复 `poll()`。
+- `offer` and `poll` are usually `O(log n)`, while `peek` is `O(1)`.  
+  加入和删除通常 `O(log n)`，查看队头 `O(1)`。
+
+英文考试句 / Exam sentence:
+
+> A priority queue removes elements according to priority rather than insertion order; in Java, natural ordering usually gives the smallest element first unless a comparator changes the order.
+
+### 7.10 Deque and ArrayDeque / 双端队列与 ArrayDeque
+
+**中文：** `Deque<E>` 是 double-ended queue，队头和队尾都可以插入、删除、查看。`ArrayDeque<E>` 是常见实现，可以当 stack 用，也可以当 queue 用。
+
+**English:** A `Deque<E>` is a double-ended queue. It supports insertion, removal, and inspection at both ends. `ArrayDeque<E>` is a common implementation and can be used as a stack or queue.
+
+常用方法 / Common methods:
+
+| Front / 队头 | Back / 队尾 |
+|---|---|
+| `addFirst(e)` | `addLast(e)` |
+| `removeFirst()` | `removeLast()` |
+| `peekFirst()` | `peekLast()` |
+
+完整例子 / Complete example:
+
+```java
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class DequeReviewExample {
+    public static void main(String[] args) {
+        Deque<String> deque = new ArrayDeque<>();
+
+        deque.addFirst("front");
+        deque.addLast("back");
+
+        System.out.println(deque.peekFirst()); // front
+        System.out.println(deque.peekLast());  // back
+
+        deque.removeFirst();
+        deque.removeLast();
+    }
+}
+```
+
+复习结论 / Revision conclusion:
+
+> `ArrayDeque` is usually a good implementation for stack and FIFO queue behavior, while `PriorityQueue` is for priority-based processing.
 
 ---
 
@@ -1010,7 +1364,40 @@ JDK 9 factory methods:
 O(1) < O(log n) < O(n) < O(n log n) < O(n^2) < O(n^3) < O(2^n)
 ```
 
-### 9.6 Recurrence Patterns / 递推式模式
+### 9.6 Collection Operation Complexity / 集合操作复杂度
+
+这张表是 CPT204 里判断集合选择和代码效率的高频内容。复杂度通常讲 average/common case；具体还会受实现、碰撞、扩容、树高影响。
+
+This table is high-yield for CPT204 collection-selection and code-efficiency questions. Complexities are typical/common cases unless stated otherwise.
+
+| Operation / 操作 | Common structure / 常见结构 | Time / 时间 |
+|---|---|---|
+| access by index | `ArrayList.get(i)` | `O(1)` |
+| access by index | `LinkedList.get(i)` | `O(n)` |
+| append at end | `ArrayList.add(e)` | amortized `O(1)` |
+| insert/remove middle | `ArrayList` | `O(n)` |
+| push/pop/peek | stack with `ArrayDeque` | `O(1)` |
+| offer/poll/peek | FIFO queue with `ArrayDeque` | `O(1)` |
+| offer/poll | `PriorityQueue` | `O(log n)` |
+| peek | `PriorityQueue` | `O(1)` |
+| contains/search | unsorted `List` | `O(n)` |
+| contains/add/remove | `HashSet` / `HashMap` | average `O(1)`, worst can degrade |
+| search/insert/delete | `TreeSet` / `TreeMap` | `O(log n)` |
+
+关键解释 / Key explanation:
+
+- Amortized `O(1)` means occasional resizing is expensive, but the average cost over many insertions is constant.  
+  摊还 `O(1)` 表示某一次扩容可能很贵，但大量插入平均下来是常数级。
+- Big-O depends on implementation, not only interface.  
+  复杂度取决于实现类，不只看接口名。
+- If a structure is sorted or priority-based, updates often cost `O(log n)`.  
+  如果结构维护排序或优先级，插入/删除通常不是 `O(1)`，常见是 `O(log n)`。
+
+Exam sentence:
+
+> The same interface can have different performance depending on its implementation; for example, `ArrayList` has fast index access, while `LinkedList` has slow index access.
+
+### 9.7 Recurrence Patterns / 递推式模式
 
 | Recurrence | Typical complexity | Example |
 |---|---|---|
@@ -1311,7 +1698,7 @@ DFS(v):
 
 Complexity:
 
-- `O(|V| + |E|)` with adjacency lists.
+- `O(V + E)` with adjacency lists.
 
 ### 12.4 BFS / 广度优先搜索
 
@@ -1335,7 +1722,7 @@ BFS(start):
 
 Complexity:
 
-- `O(|V| + |E|)`。
+- `O(V + E)`。
 
 ### 12.5 MST and Prim's Algorithm / 最小生成树与 Prim
 
@@ -1776,37 +2163,527 @@ Data structures:
 | fixed-size same-type sequence | array | simple, indexed, fixed length |
 | resizable indexed sequence | `ArrayList` | fast random access |
 | frequent head/tail insert/remove | `LinkedList` | pointer updates |
+| stack LIFO processing | `ArrayDeque` as `Deque` | efficient `push/pop/peek` |
+| double-ended operations | `ArrayDeque` as `Deque` | operations at both ends |
 | no duplicates, fastest lookup | `HashSet` | hashing average `O(1)` |
 | no duplicates, insertion order | `LinkedHashSet` | linked order |
 | no duplicates, sorted order | `TreeSet` | balanced tree ordering |
-| FIFO processing | `Queue` with `LinkedList` | arrival order |
+| FIFO processing | `Queue` with `ArrayDeque` | arrival order |
 | priority processing | `PriorityQueue` | priority order |
 | key-value lookup | `HashMap` | fast by key |
 | sorted key-value lookup | `TreeMap` | key order and navigation |
 
 ### 17.2 Algorithm Complexity Summary
 
-| Algorithm / Operation | Time |
-|---|---|
-| Linear search | `O(n)` |
-| Binary search | `O(log n)` |
-| Selection sort | `O(n^2)` |
-| Insertion sort | worst `O(n^2)`, good for nearly sorted |
-| Bubble sort | `O(n^2)`, optimized best `O(n)` |
-| Merge sort | `O(n log n)` |
-| Quick sort | average `O(n log n)`, worst `O(n^2)` |
-| Heap add/remove | `O(log n)` |
-| Heap sort | `O(n log n)` |
-| DFS/BFS | `O(|V| + |E|)` |
-| BST search/insert/delete | `O(h)`, worst `O(n)` |
-| AVL search/insert/delete | `O(log n)` |
-| Hash table search/insert/delete | average `O(1)`, worst depends on collisions |
-| Brute-force string match | `O(nm)` |
-| KMP | `O(n + m)` |
-| Euclid GCD | `O(log n)` |
-| Tower of Hanoi | `O(2^n)` |
+| Algorithm / Operation | Best / 最佳 | Average / 平均 | Worst / 最坏/最慢 |
+|---|---|---|---|
+| Linear search | `O(1)` | `O(n)` | `O(n)` |
+| Binary search | `O(1)` | `O(log n)` | `O(log n)` |
+| Selection sort | `O(n^2)` | `O(n^2)` | `O(n^2)` |
+| Insertion sort | `O(n)` | `O(n^2)` | `O(n^2)` |
+| Bubble sort optimized | `O(n)` | `O(n^2)` | `O(n^2)` |
+| Merge sort | `O(n log n)` | `O(n log n)` | `O(n log n)` |
+| Quick sort | `O(n log n)` | `O(n log n)` | `O(n^2)` |
+| Heap add/remove | `O(1)` best add/remove case | `O(log n)` | `O(log n)` |
+| Heap sort | `O(n log n)` | `O(n log n)` | `O(n log n)` |
+| DFS/BFS full traversal | `O(V + E)` | `O(V + E)` | `O(V + E)` |
+| BST search/insert/delete | `O(1)` | `O(log n)` balanced | `O(n)` skewed |
+| AVL search/insert/delete | `O(1)` search at root | `O(log n)` | `O(log n)` |
+| Hash table search/insert/delete | `O(1)` | `O(1)` | `O(n)` |
+| Brute-force string match | `O(n)` | `O(nm)` course bound | `O(nm)` |
+| KMP | `O(n + m)` | `O(n + m)` | `O(n + m)` |
+| Euclid GCD | `O(1)` | `O(log n)` | `O(log n)` |
+| Tower of Hanoi | `O(2^n)` | `O(2^n)` | `O(2^n)` |
 
-### 17.3 Interface vs Abstract Class vs Concrete Class
+### 17.3 All Learned Algorithms Big-O And Use Cases / 所学算法 Big-O 与用途总表
+
+这一张表把课程里出现过的主要算法和数据结构操作统一放在一起。考试里如果问 “Which algorithm should be used?” 或 “What is the Big-O notation?”，先从这里找。
+
+This table collects the main algorithms and data-structure operations covered in the course. Use it when an exam asks which algorithm to choose or what the Big-O notation is.
+
+说明 / Note: 对某些算法，课程通常只要求 full run 或 worst case；这时 Best/Average/Worst 可能相同。For some algorithms, the course usually analyzes the full run or worst case, so the best, average, and worst cases may be the same.
+
+| Algorithm / 算法 | Best / 最佳 | Average / 平均 | Worst / 最坏/最慢 | Use case / 用处 |
+|---|---|---|---|---|
+| Array traversal / 数组遍历 | `O(n)` | `O(n)` | `O(n)` | Visit every element; sum/count/max/min. / 访问每个元素；求和、计数、最大最小。 |
+| Array copy / 数组复制 | `O(n)` | `O(n)` | `O(n)` | Copy all elements. / 复制所有元素。 |
+| Linear search / 线性查找 | `O(1)` | `O(n)` | `O(n)` | Search unsorted data. / 查找未排序数据。 |
+| Binary search / 二分查找 | `O(1)` | `O(log n)` | `O(log n)` | Search sorted data. / 查找已排序数据。 |
+| Selection sort / 选择排序 | `O(n^2)` | `O(n^2)` | `O(n^2)` | Simple repeated minimum selection. / 反复选择最小值。 |
+| Insertion sort / 插入排序 | `O(n)` | `O(n^2)` | `O(n^2)` | Good for nearly sorted data. / 适合几乎有序数据。 |
+| Bubble sort / 冒泡排序 | `O(n)` optimized | `O(n^2)` | `O(n^2)` | Teaching swap-based sorting. / 理解相邻交换排序。 |
+| Merge sort / 归并排序 | `O(n log n)` | `O(n log n)` | `O(n log n)` | Stable divide-and-conquer sorting. / 稳定分治排序。 |
+| Quick sort / 快速排序 | `O(n log n)` | `O(n log n)` | `O(n^2)` | Fast general sorting; pivot matters. / 常用快速排序；pivot 很关键。 |
+| Heap insertion / 堆插入 | `O(1)` | `O(log n)` | `O(log n)` | Add while keeping heap property. / 插入并保持堆性质。 |
+| Heap removal / 堆删除根 | `O(1)` | `O(log n)` | `O(log n)` | Remove max/min root. / 删除堆顶最大或最小元素。 |
+| Heap sort / 堆排序 | `O(n log n)` | `O(n log n)` | `O(n log n)` | Space-efficient comparison sorting. / 较省空间的比较排序。 |
+| PriorityQueue `offer` / 优先队列入队 | `O(1)` | `O(log n)` | `O(log n)` | Add item by priority. / 按优先级加入元素。 |
+| PriorityQueue `poll` / 优先队列出队 | `O(1)` | `O(log n)` | `O(log n)` | Remove next priority item. / 取出下一个优先级元素。 |
+| PriorityQueue `peek` / 查看队头 | `O(1)` | `O(1)` | `O(1)` | Inspect without removing. / 查看但不删除。 |
+| Stack push/pop/peek / 栈操作 | `O(1)` | `O(1)` | `O(1)` | LIFO processing. / 后进先出。 |
+| Queue offer/poll/peek / 队列操作 | `O(1)` amortized | `O(1)` amortized | `O(n)` during resize | FIFO processing and BFS. / 先进先出和 BFS。 |
+| DFS / 深度优先搜索 | `O(V + E)` | `O(V + E)` | `O(V + E)` | Components, cycles, path exploration. / 连通分量、环、路径探索。 |
+| BFS / 广度优先搜索 | `O(V + E)` | `O(V + E)` | `O(V + E)` | Shortest edge count in unweighted graphs. / 无权图最少边路径。 |
+| Prim's algorithm / Prim 最小生成树 | `O(n^3)` course version | `O(n^3)` course version | `O(n^3)` course version | Minimum spanning tree. / 最小生成树。 |
+| Prim optimized / Prim 优化版 | `O(E log V)` | `O(E log V)` | `O(E log V)` | MST with priority queue. / 用优先队列求 MST。 |
+| Dijkstra simple / Dijkstra 简单版 | `O(V^2)` | `O(V^2)` | `O(V^2)` | Single-source shortest paths. / 单源最短路径。 |
+| Dijkstra with priority queue / Dijkstra 优先队列版 | `O((V+E) log V)` | `O((V+E) log V)` | `O((V+E) log V)` | Faster sparse-graph shortest paths. / 稀疏图更快最短路。 |
+| BST search / BST 查找 | `O(1)` | `O(log n)` | `O(n)` | Search by BST ordering. / 利用左小右大查找。 |
+| BST insertion / BST 插入 | `O(1)` | `O(log n)` | `O(n)` | Insert while preserving BST rule. / 插入并保持 BST 性质。 |
+| BST deletion / BST 删除 | `O(1)` | `O(log n)` | `O(n)` | Remove leaf/one-child/two-child node. / 删除不同情况节点。 |
+| Tree inorder traversal / 中序遍历 | `O(n)` | `O(n)` | `O(n)` | Sorted output for BST. / BST 输出有序结果。 |
+| Tree preorder traversal / 前序遍历 | `O(n)` | `O(n)` | `O(n)` | Copy. / 复制。 |
+| Tree postorder traversal / 后序遍历 | `O(n)` | `O(n)` | `O(n)` | Delete/free subtrees. / 删除或释放子树。 |
+| AVL search / AVL 查找 | `O(1)` | `O(log n)` | `O(log n)` | Balanced-tree lookup. / 平衡树查找。 |
+| AVL insertion / AVL 插入 | `O(1)` | `O(log n)` | `O(log n)` | Insert and rebalance. / 插入并重新平衡。 |
+| AVL deletion / AVL 删除 | `O(1)` | `O(log n)` | `O(log n)` | Delete and rebalance. / 删除并重新平衡。 |
+| AVL rotation / AVL 旋转 | `O(1)` | `O(1)` | `O(1)` | Restore balance locally. / 局部恢复平衡。 |
+| Hash table search/insert/delete / 哈希表操作 | `O(1)` | `O(1)` | `O(n)` | Fast membership and key-value lookup. / 快速成员测试和键值查找。 |
+| Linear probing / 线性探测 | `O(1)` | `O(1)` if controlled | `O(n)` | Open-address collision handling. / 开放地址冲突处理。 |
+| Quadratic probing / 二次探测 | `O(1)` | `O(1)` if controlled | `O(n)` | Reduce primary clustering. / 减少主聚集。 |
+| Double hashing / 双重哈希 | `O(1)` | `O(1)` if controlled | `O(n)` | Second hash step for collisions. / 第二哈希步长处理冲突。 |
+| Separate chaining / 分离链表 | `O(1)` | `O(1)` | `O(n)` | Store collisions in bucket lists. / 冲突元素放入桶链表。 |
+| Rehashing / 再哈希 | `O(n)` | `O(n)` | `O(n)` | Rebuild table. / 重建表。 |
+| Euclid GCD / 欧几里得算法 | `O(1)` | `O(log n)` | `O(log n)` | Greatest common divisor. / 最大公因数。 |
+| Prime test by trial division / 试除法判质数 | `O(1)` | `O(sqrt n)` | `O(sqrt n)` | Test one number for primality. / 判断单个数是否质数。 |
+| Sieve of Eratosthenes / 埃拉托色尼筛 | `O(n log log n)` | `O(n log log n)` | `O(n log log n)` | Generate primes up to n. / 生成 n 以内质数。 |
+| Fibonacci naive recursion / 斐波那契朴素递归 | `O(1)` base case | `O(2^n)` | `O(2^n)` | Show repeated subproblems. / 展示重复子问题。 |
+| Fibonacci dynamic programming / 斐波那契动态规划 | `O(1)` base case | `O(n)` | `O(n)` | Store results to avoid repetition. / 存结果避免重复计算。 |
+| Closest pair brute force / 最近点对暴力法 | `O(n^2)` | `O(n^2)` | `O(n^2)` | Check all point pairs. / 检查所有点对。 |
+| Closest pair divide and conquer / 最近点对分治法 | `O(n log n)` | `O(n log n)` | `O(n log n)` | Efficient closest pair search. / 高效找最近点对。 |
+| Eight queens backtracking / 八皇后回溯 | Case-dependent | Exponential | Exponential | Search valid placements. / 搜索合法摆法。 |
+| Convex hull gift-wrapping / 凸包 Gift Wrapping | `O(n)` when h small | `O(nh)` | `O(n^2)` | Build hull by boundary points. / 通过边界点构造凸包。 |
+| Convex hull Graham scan / 凸包 Graham Scan | `O(n log n)` | `O(n log n)` | `O(n log n)` | Hull after angle sorting. / 角度排序后构造凸包。 |
+| Brute-force string matching / 暴力字符串匹配 | `O(n)` | `O(nm)` course bound | `O(nm)` | Simple substring search. / 简单子串查找。 |
+| KMP string matching / KMP 字符串匹配 | `O(n + m)` | `O(n + m)` | `O(n + m)` | Prefix-table substring search. / 前缀表子串查找。 |
+| Boyer-Moore string matching / Boyer-Moore 字符串匹配 | Often sublinear | Often sublinear | `O(nm)` | Fast practical mismatch shifts. / 利用失配跳跃。 |
+| Tower of Hanoi / 汉诺塔 | `O(2^n)` | `O(2^n)` | `O(2^n)` | Classic exponential recursion. / 指数级经典递归。 |
+
+Quick exam reminders / 考试速记:
+
+- `O(log n)` usually means the search space is repeatedly halved.  
+  `O(log n)` 通常说明搜索空间不断减半。
+- `O(n log n)` is common for efficient comparison sorting.  
+  `O(n log n)` 常见于高效比较排序。
+- `O(V + E)` means graph traversal visits vertices and edges.  
+  `O(V + E)` 表示图遍历会访问顶点和边。
+- Hashing is average `O(1)`, but poor hashing or too many collisions can degrade performance.  
+  哈希平均 `O(1)`，但哈希差或冲突多会变慢。
+
+### 17.4 Collection Method Quick Table / 集合方法速查
+
+| Structure / 结构 | Main methods / 主要方法 | Meaning / 含义 |
+|---|---|---|
+| `List` | `add`, `get`, `set`, `remove`, `contains`, `size` | indexed sequence |
+| `Iterator` | `hasNext`, `next`, `remove` | safe traversal and deletion |
+| `Stack` / `Deque` stack | `push`, `pop`, `peek`, `isEmpty` | LIFO |
+| `Queue` | `offer`, `poll`, `peek` | FIFO safe methods |
+| `Deque` | `addFirst`, `addLast`, `removeFirst`, `removeLast` | both-end operations |
+| `PriorityQueue` | `offer`, `poll`, `peek` | priority order |
+| `Map` | `put`, `get`, `containsKey`, `remove`, `keySet`, `entrySet` | key-value lookup |
+| `Set` | `add`, `contains`, `remove` | uniqueness |
+
+考试提醒 / Exam reminders:
+
+- `peek` means read without removing.  
+  `peek` 只看不删。
+- `poll` removes queue head; `pop` removes stack top.  
+  `poll` 删除队头；`pop` 删除栈顶。
+- `PriorityQueue` iteration is not sorted.  
+  遍历优先队列不保证有序。
+- `List.remove(1)` in `List<Integer>` removes by index.  
+  `List<Integer>` 中 `remove(1)` 默认删 index 1。
+
+### 17.4.1 Java Method Patterns And Replaceable Parts / Java 常用方法模板与可替换位置
+
+考试里很多代码题不会直接问“这个方法是什么意思”，而是把变量名、集合类型、条件、比较规则或返回值换掉，让你补全代码、判断输出或解释复杂度。本节用 `<...>` 标出最容易被替换的位置。
+
+In many exam questions, the method itself stays the same, but variable names, collection types, conditions, comparison rules, or returned values are replaced. This section marks replaceable parts with `<...>`.
+
+重要约定 / Important convention:
+
+- `<>` 在真实 Java 里可以表示 generics，例如 `ArrayList<String>`。  
+  In real Java, `<>` can mean generics, such as `ArrayList<String>`.
+- 本节模板中的 `<collection>`, `<condition>`, `<value>` 是“占位符”，考试或你自己写代码时要替换成真实代码。  
+  In the templates below, `<collection>`, `<condition>`, and `<value>` are placeholders. Replace them with real Java code.
+- 不要把 `<condition>` 这种占位符原样写进 Java 程序；它只是告诉你“这里可能被题目替换”。  
+  Do not literally type placeholder names such as `<condition>` into Java code.
+
+#### A. Iterator / 迭代器方法
+
+| Method / 方法 | Effect / 作用 | Replaceable parts / 可能替换位置 | Exam trap / 考试坑点 |
+|---|---|---|---|
+| `<collection>.iterator()` | creates an iterator over a collection / 创建迭代器 | `<collection>` may become a `List`, `Set`, custom `BST`, etc. / 集合对象可能被替换 | Object must implement `Iterable`. / 对象需要实现 `Iterable` |
+| `it.hasNext()` | checks whether another element exists / 判断是否还有下一个元素 | loop condition may be changed / 循环条件可能被换 | Calling `next()` without checking may throw exception. / 不检查就 `next()` 可能异常 |
+| `it.next()` | returns current next element and moves forward / 取出下一个元素并前进 | element type `<E>` may change / 元素类型可能变 | Two `next()` calls in one loop move two steps. / 一轮循环调用两次会跳过元素 |
+| `it.remove()` | removes the last element returned by `next()` / 删除刚刚由 `next()` 返回的元素 | remove condition may change / 删除条件可能被换 | Must be after `next()` and only once per `next()`. / 必须在 `next()` 后，且一次 `next()` 最多一次 `remove()` |
+
+标准删除模板 / Standard safe-removal template:
+
+```java
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class IteratorRemovalTemplate {
+    public static void main(String[] args) {
+        List<Integer> numbers = new ArrayList<>();
+        numbers.add(3);
+        numbers.add(10);
+        numbers.add(15);
+        numbers.add(22);
+
+        Iterator<Integer> iterator = numbers.iterator();
+        while (iterator.hasNext()) {
+            Integer value = iterator.next();
+
+            // 可替换位置 1: <conditionToRemove>
+            // Replaceable part 1: change this condition in exam questions.
+            if (value % 2 == 0) {
+                iterator.remove();
+            }
+        }
+
+        System.out.println(numbers); // [3, 15]
+    }
+}
+```
+
+可替换位置总结 / Replaceable parts:
+
+- `<ElementType>`: `Integer`, `String`, `Student`, `Edge`, `TreeNode<E>` 等。  
+  Element type may be replaced by `Integer`, `String`, `Student`, `Edge`, `TreeNode<E>`, etc.
+- `<collection>`: `numbers`, `names`, `students`, `tree`, `set` 等。  
+  Collection variable may change.
+- `<conditionToRemove>`: `value % 2 == 0`, `value.compareTo(target) < 0`, `student.getMark() < 40` 等。  
+  Removal condition is often replaced.
+- `<action>`: 打印、计数、求和、删除、插入到另一个集合。  
+  The loop body may print, count, sum, remove, or copy elements.
+
+#### B. Enhanced For Loop vs Iterator / 增强 for 与迭代器
+
+只读遍历模板 / Read-only traversal:
+
+```java
+for (Integer value : numbers) {
+    System.out.println(value);
+}
+```
+
+边遍历边删除时不要这样写 / Do not structurally remove like this:
+
+```java
+for (Integer value : numbers) {
+    if (value % 2 == 0) {
+        numbers.remove(value); // risky: may cause ConcurrentModificationException
+    }
+}
+```
+
+考试英文句 / Exam English sentence:
+
+> Use an explicit iterator when removing elements during traversal because `Iterator.remove()` updates the iterator state consistently.
+
+中文理解：边遍历边结构性删除时，用 `Iterator.remove()`，因为它知道自己刚访问了哪个元素，也能让迭代器状态保持一致。
+
+#### C. ListIterator / 双向列表迭代器
+
+| Method / 方法 | Effect / 作用 | Replaceable parts / 可替换位置 |
+|---|---|---|
+| `list.listIterator()` | starts before the first element / 从第一个元素前开始 | `<list>` may change |
+| `list.listIterator(index)` | starts at a given position / 从指定下标开始 | `<index>` may change |
+| `hasPrevious()` / `previous()` | moves backward / 向前一个方向移动 | direction may change |
+| `add(element)` | inserts during iteration / 迭代时插入 | `<element>` may change |
+| `set(element)` | replaces last returned element / 替换刚返回的元素 | replacement value may change |
+
+完整例子 / Complete example:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+
+public class ListIteratorTemplate {
+    public static void main(String[] args) {
+        List<String> words = new ArrayList<>();
+        words.add("java");
+        words.add("exam");
+        words.add("list");
+
+        ListIterator<String> iterator = words.listIterator();
+        while (iterator.hasNext()) {
+            String word = iterator.next();
+
+            // 可替换位置: <targetValue> and <replacementValue>
+            if (word.equals("exam")) {
+                iterator.set("CPT204");
+                iterator.add("review");
+            }
+        }
+
+        System.out.println(words); // [java, CPT204, review, list]
+    }
+}
+```
+
+#### D. Collection and List Methods / 集合与列表方法
+
+| Method / 方法 | Effect / 作用 | Return / 返回值 | Replaceable parts / 可替换位置 |
+|---|---|---|---|
+| `add(e)` | appends or inserts element / 添加元素 | usually `boolean` for `Collection`, `void` for `List.add(index,e)` | `<e>`, `<index>` |
+| `get(index)` | reads element at index / 读取下标元素 | element | `<index>` |
+| `set(index, e)` | replaces element at index / 替换下标元素 | old element / 旧元素 | `<index>`, `<e>` |
+| `remove(index)` | removes by position / 按下标删除 | removed element | `<index>` |
+| `remove(object)` | removes by value / 按对象值删除 | `boolean` | `<object>` |
+| `contains(e)` | membership test / 成员测试 | `boolean` | `<e>` |
+| `size()` | number of elements / 元素个数 | `int` | none |
+| `isEmpty()` | checks empty / 是否为空 | `boolean` | none |
+| `clear()` | removes all elements / 清空 | `void` | none |
+| `indexOf(e)` | first index of value / 第一次出现位置 | `int`, or `-1` if absent | `<e>` |
+| `subList(from, to)` | view from `from` inclusive to `to` exclusive / 左闭右开子列表视图 | `List<E>` | `<from>`, `<to>` |
+
+`List<Integer>` 删除重载完整例子 / Complete overload example:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class ListRemoveTemplate {
+    public static void main(String[] args) {
+        List<Integer> values = new ArrayList<>();
+        values.add(1);
+        values.add(2);
+        values.add(3);
+
+        values.remove(1);                  // removes index 1, value 2
+        values.remove(Integer.valueOf(1)); // removes object/value 1
+
+        System.out.println(values);        // [3]
+    }
+}
+```
+
+可能被替换 / What may be replaced:
+
+- `1` 可能是 index，也可能要包成 `Integer.valueOf(1)` 表示对象值。  
+  `1` may mean an index, or it may need `Integer.valueOf(1)` to mean a value object.
+- `subList(from, to)` 的 `to` 不包含。  
+  `to` in `subList(from, to)` is exclusive.
+
+#### E. Stack, Queue, Deque, PriorityQueue Methods / 栈、队列、双端队列、优先队列方法
+
+| Structure / 结构 | Safer/common methods / 常用方法 | Effect / 作用 | Replaceable parts / 可替换位置 |
+|---|---|---|---|
+| Stack via `Deque` | `push(e)`, `pop()`, `peek()` | LIFO / 后进先出 | `<e>`, stack variable |
+| Queue | `offer(e)`, `poll()`, `peek()` | FIFO / 先进先出 | `<e>`, queue variable |
+| Queue exception pair | `add(e)`, `remove()`, `element()` | may throw exception / 可能抛异常 | method choice |
+| Deque front | `addFirst(e)`, `removeFirst()`, `peekFirst()` | front-end operation / 前端操作 | `<e>` |
+| Deque back | `addLast(e)`, `removeLast()`, `peekLast()` | back-end operation / 后端操作 | `<e>` |
+| PriorityQueue | `offer(e)`, `poll()`, `peek()` | smallest or highest-priority element first / 最小或最高优先级先出 | comparator |
+
+PriorityQueue 比较器模板 / Comparator template:
+
+```java
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+public class PriorityQueueMethodTemplate {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> minQueue = new PriorityQueue<>();
+        minQueue.offer(30);
+        minQueue.offer(10);
+        minQueue.offer(20);
+        System.out.println(minQueue.poll()); // 10
+
+        // 可替换位置: <comparisonRule>
+        // This comparator reverses the natural order, so larger numbers leave first.
+        PriorityQueue<Integer> maxQueue =
+                new PriorityQueue<>(Comparator.reverseOrder());
+        maxQueue.offer(30);
+        maxQueue.offer(10);
+        maxQueue.offer(20);
+        System.out.println(maxQueue.poll()); // 30
+    }
+}
+```
+
+考试坑点 / Exam traps:
+
+- `peek()` 不删除，`poll()` 删除。  
+  `peek()` inspects; `poll()` removes.
+- `PriorityQueue` 的 enhanced for 遍历不保证 priority order。  
+  Enhanced for over a `PriorityQueue` does not guarantee priority order.
+- 如果题目换了 comparator，出队顺序也会变。  
+  If the comparator changes, the removal order changes.
+
+#### F. Map and Map.Entry Methods / 映射与键值对方法
+
+| Method / 方法 | Effect / 作用 | Return / 返回值 | Replaceable parts / 可替换位置 |
+|---|---|---|---|
+| `put(key, value)` | inserts or replaces mapping / 插入或替换键值对 | old value or `null` | `<key>`, `<value>` |
+| `get(key)` | finds value by key / 根据 key 找 value | value or `null` | `<key>` |
+| `getOrDefault(key, defaultValue)` | gets value or default / 找不到时给默认值 | value/default | `<key>`, `<defaultValue>` |
+| `containsKey(key)` | tests key existence / 判断 key 是否存在 | `boolean` | `<key>` |
+| `remove(key)` | removes mapping by key / 按 key 删除 | old value or `null` | `<key>` |
+| `keySet()` | returns keys / 返回所有 key | `Set<K>` | loop variable |
+| `values()` | returns values / 返回所有 value | `Collection<V>` | loop variable |
+| `entrySet()` | returns key-value entries / 返回键值对集合 | `Set<Map.Entry<K,V>>` | entry variable |
+| `entry.getKey()` | reads key from entry / 读 key | key | none |
+| `entry.getValue()` | reads value from entry / 读 value | value | none |
+
+计数模板 / Counting template:
+
+```java
+import java.util.HashMap;
+import java.util.Map;
+
+public class MapCountingTemplate {
+    public static void main(String[] args) {
+        String[] words = {"java", "tree", "java", "map"};
+        Map<String, Integer> counts = new HashMap<>();
+
+        for (String word : words) {
+            // 可替换位置: <key>, <defaultValue>, <newValue>
+            int oldCount = counts.getOrDefault(word, 0);
+            counts.put(word, oldCount + 1);
+        }
+
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
+    }
+}
+```
+
+#### G. Arrays, Collections, and String Utility Methods / 数组、集合工具类与字符串方法
+
+| Area / 类别 | Method / 方法 | Effect / 作用 | Replaceable parts / 可替换位置 |
+|---|---|---|---|
+| `Arrays` | `Arrays.sort(array)` | sorts array / 排序数组 | `<array>` |
+| `Arrays` | `Arrays.binarySearch(array, key)` | binary search in sorted array / 已排序数组二分查找 | `<array>`, `<key>` |
+| `Arrays` | `Arrays.copyOf(array, newLength)` | copies and resizes / 复制并改变长度 | `<newLength>` |
+| `Arrays` | `Arrays.asList(a, b, c)` | fixed-size list view / 固定大小列表视图 | elements |
+| `Collections` | `Collections.sort(list)` | sorts list / 排序列表 | `<list>` |
+| `Collections` | `Collections.binarySearch(list, key)` | binary search in sorted list / 已排序列表二分查找 | `<key>` |
+| `Collections` | `Collections.reverse(list)` | reverses order / 反转顺序 | `<list>` |
+| `Collections` | `Collections.max(list)` / `min(list)` | max/min by natural order / 自然顺序最大最小 | `<list>` |
+| `String` | `length()` | string length / 字符串长度 | none |
+| `String` | `charAt(index)` | character at index / 取指定字符 | `<index>` |
+| `String` | `substring(start, end)` | substring, end exclusive / 子串，右边不包含 | `<start>`, `<end>` |
+| `String` | `indexOf(target)` | first occurrence / 第一次出现位置 | `<target>` |
+| `String` | `equals(other)` | content equality / 内容相等 | `<other>` |
+| `String` | `compareTo(other)` | lexicographic comparison / 字典序比较 | `<other>` |
+
+字符串模板 / String template:
+
+```java
+public class StringMethodTemplate {
+    public static void main(String[] args) {
+        String text = "CPT204 Java";
+
+        // 可替换位置: <index>, <start>, <end>, <target>
+        System.out.println(text.length());        // 11
+        System.out.println(text.charAt(0));       // C
+        System.out.println(text.substring(0, 6)); // CPT204
+        System.out.println(text.indexOf("Java")); // 7
+        System.out.println(text.equals("Java"));  // false
+    }
+}
+```
+
+#### H. Comparable and Comparator Methods / 自然顺序与外部比较器方法
+
+| Method / 方法 | Where / 位置 | Meaning / 含义 | Replaceable parts / 可替换位置 |
+|---|---|---|---|
+| `compareTo(other)` | inside `Comparable<T>` class | natural order / 自然顺序 | compared field |
+| `compare(a, b)` | inside `Comparator<T>` class | custom order / 自定义顺序 | comparison rule |
+| `Comparator.reverseOrder()` | utility comparator | reverse natural order / 反转自然顺序 | none |
+
+完整比较器例子 / Complete comparator example:
+
+```java
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+class Student {
+    private String name;
+    private int mark;
+
+    public Student(String name, int mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getMark() {
+        return mark;
+    }
+
+    public String toString() {
+        return name + ":" + mark;
+    }
+}
+
+class MarkDescendingComparator implements Comparator<Student> {
+    public int compare(Student first, Student second) {
+        // 可替换位置: <comparisonField> and <orderDirection>
+        return second.getMark() - first.getMark();
+    }
+}
+
+public class ComparatorMethodTemplate {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>();
+        students.add(new Student("Amy", 80));
+        students.add(new Student("Ben", 95));
+        students.add(new Student("Cara", 70));
+
+        students.sort(new MarkDescendingComparator());
+        System.out.println(students); // [Ben:95, Amy:80, Cara:70]
+    }
+}
+```
+
+英文答题句 / English answer:
+
+> `compare(a, b)` returns a negative value when `a` should come before `b`, zero when they are equal in ordering, and a positive value when `a` should come after `b`.
+
+额外坑点 / Extra trap: `return second.getMark() - first.getMark();` 对小范围成绩很直观；如果比较的是可能很大的 `int`，更安全的写法是 `Integer.compare(second.getMark(), first.getMark())`，避免整数溢出。
+
+For small marks, subtraction is easy to read. For large integers, `Integer.compare(second.getMark(), first.getMark())` is safer because it avoids integer overflow.
+
+#### I. Custom Tree/BST Iterator Method Pattern / 自定义树迭代器方法模板
+
+课程 BST 代码里常见方法名可能是自定义的，例如 `insert`, `delete`, `search`, `inorder`, `preorder`, `postorder`, `iterator`。考试可能把元素类型、遍历顺序、删除目标或比较条件替换掉。
+
+In course BST code, method names may be custom, such as `insert`, `delete`, `search`, `inorder`, `preorder`, `postorder`, and `iterator`. Exam questions may replace element type, traversal order, deletion target, or comparison condition.
+
+```java
+// Pseudocode-style Java template for a BST iterator idea.
+// 这里是思想模板：真实课程代码可能用 inner class 或 ArrayList 保存遍历结果。
+Iterator<E> iterator() {
+    // 可替换位置: <traversalOrder>
+    // inorder gives sorted order for a BST.
+    return inorderList.iterator();
+}
+```
+
+BST 相关可替换点 / Replaceable BST parts:
+
+- `<traversalOrder>`: `inorder`, `preorder`, `postorder`, `breadth-first`。  
+  Traversal order may change.
+- `<target>`: 要搜索、插入或删除的元素。  
+  Target value may change.
+- `<comparison>`: `element.compareTo(current.element) < 0` 等比较方向。  
+  Comparison direction may change.
+- `<case>`: 删除节点时的 leaf、one child、two children。  
+  Deletion case may change.
+
+### 17.5 Interface vs Abstract Class vs Concrete Class
 
 | Type | Meaning | Can instantiate? | Contains implementation? |
 |---|---|---|---|
@@ -1814,7 +2691,7 @@ Data structures:
 | Abstract class | partial implementation/base type | no | yes |
 | Concrete class | usable implementation | yes | yes |
 
-### 17.4 Comparable vs Comparator
+### 17.6 Comparable vs Comparator
 
 | Item | Comparable | Comparator |
 |---|---|---|
@@ -1823,6 +2700,31 @@ Data structures:
 | Meaning | natural order | custom order |
 | Number of orderings | usually one | many |
 | Example | `String`, `Integer` | sort by length, by area, by amount |
+
+### 17.7 High-Yield Java Keywords In Course Code / 课程代码高频关键字
+
+| Keyword / 关键字 | Exam meaning / 英文考点 | Common CPT204 use / 常见位置 |
+|---|---|---|
+| `class` | defines a blueprint for objects | `Student`, `BST`, `AVLTree` |
+| `interface` | defines a contract | `Comparable`, `Comparator`, `Iterable` |
+| `implements` | promises to provide interface methods | `implements Comparable<E>` |
+| `extends` | inherits from superclass or sets generic upper bound | `AVLTree extends BST`, `<E extends Comparable<E>>` |
+| `new` | creates a concrete object or array | `new ArrayList<>()`, `new int[n]` |
+| `static` | belongs to the class, not one object | `main`, helper methods |
+| `final` | prevents reassignment/overriding/inheritance depending on target | constants, fixed references |
+| `this` | current object reference | constructors, instance methods |
+| `super` | superclass part of current object | constructor chaining, overridden methods |
+| `instanceof` | runtime type check | safe downcasting |
+| `for` / `while` | repeated execution | traversal, algorithm loops |
+| `return` | exits method and optionally gives a value | recursive and search methods |
+
+短答模板 / Short answer templates:
+
+> `implements` connects a class to an interface contract.
+
+> In a generic bound, `extends` means the type must be a subtype of the bound, even if the bound is an interface.
+
+> `new` requires a concrete class; interfaces and abstract classes cannot be directly instantiated.
 
 ---
 
@@ -1840,6 +2742,23 @@ When seeing code:
 8. For equals/hashCode, check whether both are consistent.
 9. For BST/AVL, draw the path from root; operations depend on height.
 10. For graph algorithms, distinguish traversal, MST, and shortest path.
+11. For `List`, check whether code uses index, value, or iterator.
+12. For stack/queue, identify whether removal is LIFO, FIFO, or priority-based.
+13. For `PriorityQueue`, check comparator direction and remember iteration is not sorted.
+14. For interfaces, check the concrete class after `new`.
+15. For keywords, explain the concrete effect in this code, not only the dictionary meaning.
+16. For method-template questions, identify which parts are replaceable: type, variable, index, condition, comparator, return value, and traversal order.
+17. For iterator questions, check whether the code only reads elements or structurally removes elements during traversal.
+
+常见英文作答方式 / Common English answer shapes:
+
+```text
+This code uses a List because order and duplicates matter.
+This code uses a Queue because elements must be processed in FIFO order.
+This code uses a PriorityQueue because the next element is chosen by priority.
+The time complexity is O(n) because the loop may inspect every element once.
+The time complexity is O(log n) because each step halves the search space.
+```
 
 ---
 
@@ -1858,9 +2777,21 @@ When seeing code:
 - type erasure: 类型擦除
 - wildcard: 通配符
 - collection: 集合
+- list: 列表，有序可重复集合
+- stack: 栈，后进先出
+- queue: 队列，先进先出
+- deque: 双端队列
+- priority queue: 优先队列
 - iterator: 迭代器
+- iterable: 可迭代对象
 - comparator: 比较器
+- comparable: 可比较的，自然顺序
 - natural ordering: 自然顺序
+- insertion order: 插入顺序
+- sorted order: 排序顺序
+- priority order: 优先级顺序
+- random access: 随机访问/按下标直接访问
+- amortized time: 摊还时间
 - hash code: 哈希码
 - collision: 哈希冲突
 - load factor: 负载因子
@@ -1887,10 +2818,13 @@ When seeing code:
 1. 先背选择规则：什么时候用 `ArrayList`、`HashSet`、`TreeMap`、`PriorityQueue`、BST、AVL、HashMap。
 2. 再练复杂度：看到循环、递归、树高、图边点数量，立刻写出主导项。
 3. 最后练代码追踪：引用传递、`equals` vs `==`、动态绑定、迭代器删除、BST 删除、AVL 旋转。
+4. 集合题先问三个问题：是否需要重复、是否需要顺序、取出顺序是 FIFO/LIFO/priority 还是 sorted。
+5. 关键字题不要只翻译，要说效果：`new` 创建对象，`implements` 承诺接口方法，`extends` 建立继承或泛型上界。
 
 English:
 
 1. Memorize data-structure selection rules.
 2. Practice deriving Big O from loops, recursion, height, vertices, and edges.
 3. Trace code carefully for references, equality, dynamic binding, iterator behavior, BST deletion, and AVL rotations.
-
+4. For collection questions, ask whether duplicates, order, and removal policy matter.
+5. For keyword questions, explain the effect in code, not only the literal meaning.
